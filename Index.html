@@ -540,36 +540,40 @@
             // Type filter - if no types selected, show all
             let matchesType = selectedTypes.length === 0;
             
-            if (!matchesType && wine.productType) {
-                const productTypeLower = wine.productType.toLowerCase();
+            if (!matchesType) {
+                const productTypeLower = (wine.productType || '').toLowerCase();
+                const mainCategoryLower = (wine.mainCategory || '').toLowerCase();
+                const subCategoryLower = (wine.subCategory || '').toLowerCase();
+                const combinedTypes = `${productTypeLower} ${mainCategoryLower} ${subCategoryLower}`;
                 
                 matchesType = selectedTypes.some(type => {
                     switch(type) {
                         case 'Rødvin':
-                            return productTypeLower.includes('rød') || productTypeLower.includes('red');
+                            return combinedTypes.includes('rød') || combinedTypes.includes('red');
                         case 'Hvitvin':
-                            return productTypeLower.includes('hvit') || productTypeLower.includes('white');
+                            return combinedTypes.includes('hvit') || combinedTypes.includes('white');
                         case 'Musserende vin':
-                            return productTypeLower.includes('musserende') || 
-                                   productTypeLower.includes('sparkling') || 
-                                   productTypeLower.includes('champagne') ||
-                                   productTypeLower.includes('cava') ||
-                                   productTypeLower.includes('prosecco');
+                            return combinedTypes.includes('musserende') || 
+                                   combinedTypes.includes('sparkling') || 
+                                   combinedTypes.includes('champagne') ||
+                                   combinedTypes.includes('cava') ||
+                                   combinedTypes.includes('prosecco');
                         case 'Rosévin':
-                            return productTypeLower.includes('rosé') || productTypeLower.includes('rose');
+                            return combinedTypes.includes('rosé') || combinedTypes.includes('rose');
                         case 'Brennevin':
-                            return productTypeLower.includes('brennevin') || 
-                                   productTypeLower.includes('spirits') ||
-                                   productTypeLower.includes('akevitt') ||
-                                   productTypeLower.includes('whisky') ||
-                                   productTypeLower.includes('vodka') ||
-                                   productTypeLower.includes('gin') ||
-                                   productTypeLower.includes('rom') ||
-                                   productTypeLower.includes('cognac');
+                            return combinedTypes.includes('brennevin') || 
+                                   combinedTypes.includes('spirits') ||
+                                   combinedTypes.includes('akevitt') ||
+                                   combinedTypes.includes('whisky') ||
+                                   combinedTypes.includes('vodka') ||
+                                   combinedTypes.includes('gin') ||
+                                   combinedTypes.includes('rom') ||
+                                   combinedTypes.includes('cognac') ||
+                                   combinedTypes.includes('likør');
                         case 'Øl':
-                            return productTypeLower.includes('øl') || productTypeLower.includes('beer');
+                            return combinedTypes.includes('øl') || combinedTypes.includes('beer') || combinedTypes.includes('ale');
                         default:
-                            return productTypeLower.includes(type.toLowerCase());
+                            return combinedTypes.includes(type.toLowerCase());
                     }
                 });
             }
@@ -619,7 +623,8 @@
                     <div class="wine-info">
                         <div class="wine-name">${wine.productShortName}</div>
                         <div class="wine-details">ID: ${wine.productId}</div>
-                        ${wine.productType ? `<div class="wine-details">${wine.productType}</div>` : ''}
+                        ${wine.mainCategory ? `<div class="wine-details">📁 ${wine.mainCategory}${wine.subCategory ? ` → ${wine.subCategory}` : ''}</div>` : ''}
+                        ${wine.productType ? `<div class="wine-details">Type: ${wine.productType}</div>` : ''}
                         ${wine.volume ? `<div class="wine-details">Volume: ${wine.volume}L</div>` : ''}
                         ${wine.vintage ? `<div class="wine-details">Vintage: ${wine.vintage}</div>` : ''}
                         ${wine.price ? `<div class="wine-price">${wine.price} kr</div>` : ''}
@@ -727,24 +732,56 @@
     });
 
     function showProductTypes() {
-        const types = [...new Set(allWines.map(p => p.productType))].filter(t => t).sort();
-        const typeCounts = {};
+        const mainCategories = [...new Set(allWines.map(p => p.mainCategory))].filter(t => t).sort();
+        const subCategories = [...new Set(allWines.map(p => p.subCategory))].filter(t => t).sort();
+        const productTypes = [...new Set(allWines.map(p => p.productType))].filter(t => t).sort();
+        
+        const mainCounts = {};
+        const subCounts = {};
+        
         allWines.forEach(wine => {
-            if (wine.productType) {
-                typeCounts[wine.productType] = (typeCounts[wine.productType] || 0) + 1;
+            if (wine.mainCategory) {
+                mainCounts[wine.mainCategory] = (mainCounts[wine.mainCategory] || 0) + 1;
+            }
+            if (wine.subCategory) {
+                subCounts[wine.subCategory] = (subCounts[wine.subCategory] || 0) + 1;
             }
         });
         
-        console.log('=== PRODUCT TYPES IN YOUR DATA ===');
-        console.log('Unique types:', types);
-        console.log('\nCounts by type:');
-        Object.entries(typeCounts)
+        console.log('=== PRODUCT CATEGORIES IN YOUR DATA ===');
+        console.log('\n--- MAIN CATEGORIES ---');
+        console.log('Unique main categories:', mainCategories);
+        Object.entries(mainCounts)
             .sort((a, b) => b[1] - a[1])
-            .forEach(([type, count]) => {
-                console.log(`${type}: ${count} products`);
+            .forEach(([cat, count]) => {
+                console.log(`${cat}: ${count} products`);
             });
         
-        alert(`Found ${types.length} unique product types. Check the console (F12) for details.`);
+        console.log('\n--- SUB CATEGORIES ---');
+        console.log('Unique sub categories:', subCategories);
+        Object.entries(subCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 20)
+            .forEach(([cat, count]) => {
+                console.log(`${cat}: ${count} products`);
+            });
+        
+        console.log('\n--- PRODUCT TYPES ---');
+        console.log('Unique product types:', productTypes);
+        
+        // Show a sample product
+        console.log('\n--- SAMPLE PRODUCT ---');
+        if (allWines.length > 0) {
+            const sample = allWines[0];
+            console.log('Sample product:', {
+                name: sample.productShortName,
+                mainCategory: sample.mainCategory,
+                subCategory: sample.subCategory,
+                productType: sample.productType
+            });
+        }
+        
+        alert(`Found ${mainCategories.length} main categories, ${subCategories.length} sub categories. Check the console (F12) for details.`);
     }
 
     async function updateFromAPI() {
@@ -791,12 +828,22 @@
                         productShortName: product.productShortName || product.name || 'Unknown Product',
                         price: product.price,
                         volume: product.volume,
-                        productType: product.mainProductType || product.productType,
+                        // Try multiple possible fields for product type
+                        productType: product.mainProductType || product.productType || product.mainCategory || product.category || product.productTypeName,
+                        mainCategory: product.mainCategory,
+                        subCategory: product.subCategory,
                         vintage: product.vintage,
                         images: product.images || [],
                         buyable: product.buyable,
-                        productAvailability: product.productAvailability
+                        productAvailability: product.productAvailability,
+                        // Store the raw product for debugging
+                        _raw: product
                     }));
+                    
+                    // Log first product to see structure
+                    if (allWines.length === 0 && processedProducts.length > 0) {
+                        console.log('Sample product structure:', processedProducts[0]._raw);
+                    }
                     
                     allWines = [...allWines, ...processedProducts];
                     
