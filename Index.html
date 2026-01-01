@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wine Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen">
+  <div id="root"></div>
+
+  <script type="module">
+    import React, { useState, useEffect } from 'https://esm.sh/react@18';
+    import ReactDOM from 'https://esm.sh/react-dom@18/client';
+    import { Plus, Trash2, Search, RefreshCw, ChevronDown, ChevronRight, ExternalLink } from 'https://esm.sh/lucide-react@0.263.1';
+
+    const CAVES_PRODUCERS = {
+      "Burgundy": ["Domaine de la Romanée-Conti", "Leroy", "Dujac", "Rousseau", "Roumier"],
+      "Bordeaux": ["Château Lafite", "Château Latour", "Château Margaux"],
+      "Champagne": ["Krug", "Salon", "Bollinger"]
+    };
+
+    function WineTracker() {
+      const [producers, setProducers] = useState([]);
+      const [activeTab, setActiveTab] = useState('producers');
+      const [selectedProducers, setSelectedProducers] = useState(new Set());
+      const [vinmResults, setVinmResults] = useState([]);
+      const [loadingVinm, setLoadingVinm] = useState(false);
+
+      useEffect(() => {
+        const saved = localStorage.getItem('producers');
+        if (saved) setProducers(JSON.parse(saved));
+      }, []);
+
+      const saveProducers = (data) => {
+        localStorage.setItem('producers', JSON.stringify(data));
+        setProducers(data);
+      };
+
+      const toggleProducer = (name) => {
+        const newSet = new Set(selectedProducers);
+        if (newSet.has(name)) newSet.delete(name);
+        else newSet.add(name);
+        setSelectedProducers(newSet);
+      };
+
+      const addSelected = () => {
+        const newProds = Array.from(selectedProducers).map(name => ({
+          id: Date.now() + Math.random(),
+          name
+        }));
+        saveProducers([...producers, ...newProds]);
+        setSelectedProducers(new Set());
+      };
+
+      const searchVinmonopolet = async (producerName) => {
+        setLoadingVinm(true);
+        try {
+          const response = await fetch(`/.netlify/functions/search-vinmonopolet?producer=${encodeURIComponent(producerName)}`);
+          const data = await response.json();
+          setVinmResults(data.products || []);
+        } catch (err) {
+          console.error('Search error:', err);
+          setVinmResults([]);
+        }
+        setLoadingVinm(false);
+      };
+
+      return React.createElement('div', { className: 'max-w-6xl mx-auto p-8' },
+        React.createElement('div', { className: 'bg-white rounded-2xl shadow-xl p-8' },
+          React.createElement('h1', { className: 'text-4xl font-bold text-gray-800 mb-8' }, 'Wine Tracker'),
+          
+          React.createElement('div', { className: 'flex gap-4 mb-6 border-b' },
+            React.createElement('button', {
+              onClick: () => setActiveTab('producers'),
+              className: `pb-2 px-4 font-medium ${activeTab === 'producers' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500'}`
+            }, `Producers (${producers.length})`),
+            React.createElement('button', {
+              onClick: () => setActiveTab('caves'),
+              className: `pb-2 px-4 font-medium ${activeTab === 'caves' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500'}`
+            }, 'Add from Caves'),
+            React.createElement('button', {
+              onClick: () => setActiveTab('vinm'),
+              className: `pb-2 px-4 font-medium ${activeTab === 'vinm' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500'}`
+            }, 'Vinmonopolet')
+          ),
+
+          activeTab === 'producers' && React.createElement('div', { className: 'space-y-3' },
+            producers.length === 0 
+              ? React.createElement('p', { className: 'text-center text-gray-500 py-8' }, 'No producers yet')
+              : producers.map(p => React.createElement('div', {
+                  key: p.id,
+                  className: 'flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                },
+                React.createElement('span', { className: 'font-medium' }, p.name),
+                React.createElement('button', {
+                  onClick: () => saveProducers(producers.filter(x => x.id !== p.id)),
+                  className: 'text-red-500 hover:text-red-700'
+                }, React.createElement(Trash2, { size: 18 }))
+              ))
+          ),
+
+          activeTab === 'caves' && React.createElement('div', { className: 'space-y-4' },
+            React.createElement('p', { className: 'text-sm text-gray-600 mb-4' }, 
+              `${selectedProducers.size} selected`
+            ),
+            Object.keys(CAVES_PRODUCERS).map(region =>
+              React.createElement('div', { key: region, className: 'border rounded-lg p-4' },
+                React.createElement('h3', { className: 'font-semibold mb-2' }, region),
+                CAVES_PRODUCERS[region].map(prod =>
+                  React.createElement('label', {
+                    key: prod,
+                    className: 'flex items-center gap-2 p-2 cursor-pointer'
+                  },
+                    React.createElement('input', {
+                      type: 'checkbox',
+                      checked: selectedProducers.has(prod),
+                      onChange: () => toggleProducer(prod),
+                      className: 'rounded'
+                    }),
+                    React.createElement('span', { className: 'text-sm' }, prod)
+                  )
+                )
+              )
+            ),
+            selectedProducers.size > 0 && React.createElement('button', {
+              onClick: addSelected,
+              className: 'w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700'
+            }, `Add ${selectedProducers.size} Producer(s)`)
+          ),
+
+          activeTab === 'vinm' && React.createElement('div', { className: 'space-y-4' },
+            React.createElement('select', {
+              onChange: (e) => e.target.value && searchVinmonopolet(e.target.value),
+              className: 'w-full px-4 py-2 border rounded-lg'
+            },
+              React.createElement('option', { value: '' }, 'Select producer to search...'),
+              producers.map(p => React.createElement('option', { key: p.id, value: p.name }, p.name))
+            ),
+            loadingVinm && React.createElement('p', { className: 'text-center py-4' }, 'Searching...'),
+            vinmResults.map((wine, i) =>
+              React.createElement('div', {
+                key: i,
+                className: 'bg-gray-50 p-4 rounded-lg'
+              },
+                React.createElement('h3', { className: 'font-semibold' }, wine.name),
+                React.createElement('p', { className: 'text-sm text-gray-600' }, `${wine.price} kr`)
+              )
+            )
+          )
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(WineTracker));
+  </script>
+
+</body>
+</html>
