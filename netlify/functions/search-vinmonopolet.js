@@ -16,49 +16,38 @@ exports.handler = async (event) => {
   }
 
   try {
-    const apiKey = process.env.VINMONOPOLET_API_KEY;
+    // Use Vinmonopolet's public search API (no auth needed)
+    const searchUrl = `https://www.vinmonopolet.no/vmpws/v2/vmp/search?searchType=product&q=${encodeURIComponent(producer)}&pageSize=20`;
     
-    if (!apiKey) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          products: [
-            {
-              name: `${producer} - Demo Wine 2020`,
-              price: 299,
-              stock: 'In Stock',
-              productId: 'demo-001'
-            },
-            {
-              name: `${producer} - Demo Wine 2019`,
-              price: 349,
-              stock: 'Limited Stock',
-              productId: 'demo-002'
-            }
-          ],
-          note: 'Demo results. Add VINMONOPOLET_API_KEY for real data.'
-        })
-      };
-    }
-
-    const response = await fetch(
-      `https://api.vinmonopolet.no/products/v0/details/search?searchTerm=${encodeURIComponent(producer)}`,
-      {
-        headers: {
-          'Ocp-Apim-Subscription-Key': apiKey
-        }
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json'
       }
-    );
+    });
+
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}`);
+    }
 
     const data = await response.json();
     
+    const products = (data.productSearchResult?.products || []).map(p => ({
+      name: p.name || 'Unknown',
+      price: p.price?.value || 0,
+      stock: p.status || 'Unknown',
+      productId: p.code,
+      url: `https://www.vinmonopolet.no${p.url}`,
+      image: p.images?.[0]?.url
+    }));
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        products: data.products || [],
-        count: data.products?.length || 0
+        products,
+        count: products.length,
+        producer
       })
     };
 
@@ -68,7 +57,8 @@ exports.handler = async (event) => {
       headers,
       body: JSON.stringify({ 
         error: 'Search failed',
-        message: error.message 
+        message: error.message,
+        producer
       })
     };
   }
