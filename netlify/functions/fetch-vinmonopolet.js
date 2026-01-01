@@ -19,7 +19,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const apiUrl = "https://api.vinmonopolet.no/products/v0/details-normal";
+    const apiUrl = "https://apis.vinmonopolet.no/products/v0/details-normal";
     
     const response = await fetch(apiUrl, {
       method: "GET",
