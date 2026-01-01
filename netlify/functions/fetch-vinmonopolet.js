@@ -5,7 +5,6 @@ const headers = {
 ‘Content-Type’: ‘application/json’,
 };
 
-// Get API key from environment variable
 const apiKey = process.env.VINMONOPOLET_API_KEY;
 
 if (!apiKey) {
@@ -23,7 +22,6 @@ try {
 console.log(‘Fetching from Vinmonopolet API…’);
 
 ```
-// Vinmonopolet's Open API endpoint
 const apiUrl = 'https://api.vinmonopolet.no/products/v0/details-normal';
 
 const response = await fetch(apiUrl, {
@@ -54,7 +52,6 @@ if (!response.ok) {
 const data = await response.json();
 console.log('Products received:', data.length || 0);
 
-// Transform the data to a cleaner format if needed
 const products = Array.isArray(data) ? data : data.products || [];
 
 return {
