@@ -1,68 +1,76 @@
 exports.handler = async (event) => {
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Content-Type": "application/json",
+const headers = {
+“Access-Control-Allow-Origin”: “*”,
+“Access-Control-Allow-Headers”: “Content-Type”,
+“Content-Type”: “application/json”,
+};
+
+const apiKey = process.env.VINMONOPOLET_API_KEY;
+
+if (!apiKey) {
+return {
+statusCode: 500,
+headers,
+body: JSON.stringify({
+error: “API key not configured”,
+message: “Please add VINMONOPOLET_API_KEY to environment variables”
+})
+};
+}
+
+try {
+const maxResults = event.queryStringParameters?.maxResults || “1000”;
+const start = event.queryStringParameters?.start || “0”;
+
+```
+const apiUrl = "https://apis.vinmonopolet.no/products/v0/details-normal?maxResults=" + maxResults + "&start=" + start;
+
+const response = await fetch(apiUrl, {
+  method: "GET",
+  headers: {
+    "Ocp-Apim-Subscription-Key": apiKey,
+    "Accept": "application/json"
+  }
+});
+
+if (!response.ok) {
+  const errorText = await response.text();
+  return {
+    statusCode: response.status,
+    headers,
+    body: JSON.stringify({
+      error: "API request failed",
+      status: response.status,
+      message: errorText.substring(0, 500)
+    })
   };
+}
 
-  const apiKey = process.env.VINMONOPOLET_API_KEY;
-  
-  if (!apiKey) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: "API key not configured",
-        message: "Please add VINMONOPOLET_API_KEY to environment variables"
-      })
-    };
-  }
+const data = await response.json();
+const products = Array.isArray(data) ? data : [];
 
-  try {
-    const apiUrl = "https://apis.vinmonopolet.no/products/v0/details-normal";
-    
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "Ocp-Apim-Subscription-Key": apiKey,
-        "Accept": "application/json"
-      }
-    });
+return {
+  statusCode: 200,
+  headers,
+  body: JSON.stringify({
+    products: products,
+    count: products.length,
+    start: parseInt(start),
+    maxResults: parseInt(maxResults),
+    hasMore: products.length === parseInt(maxResults),
+    timestamp: new Date().toISOString()
+  })
+};
+```
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return {
-        statusCode: response.status,
-        headers,
-        body: JSON.stringify({
-          error: "API request failed",
-          status: response.status,
-          message: errorText
-        })
-      };
-    }
-
-    const data = await response.json();
-    const products = Array.isArray(data) ? data : data.products || [];
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        products: products,
-        count: products.length,
-        timestamp: new Date().toISOString()
-      })
-    };
-
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        error: "Internal server error",
-        message: error.message
-      })
-    };
-  }
+} catch (error) {
+return {
+statusCode: 500,
+headers,
+body: JSON.stringify({
+error: “Internal server error”,
+message: error.message
+})
+};
+}
 };
