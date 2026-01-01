@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wine Tracker - Caves Carrière & Vinmonopolet</title>
+  <title>Vinmonopolet Wine Database</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
@@ -13,707 +13,504 @@
   <script type="module">
     import React, { useState, useEffect } from 'https://esm.sh/react@18';
     import ReactDOM from 'https://esm.sh/react-dom@18/client';
-    import { Plus, Trash2, TrendingUp, TrendingDown, Search, ExternalLink, RefreshCw, ChevronDown, ChevronRight, Check } from 'https://esm.sh/lucide-react@0.263.1';
+    import { RefreshCw, Search, Star, Database, Download, Filter, TrendingUp, ExternalLink } from 'https://esm.sh/lucide-react@0.263.1';
 
-    const WineTracker = () => {
-      const [activeTab, setActiveTab] = useState('wines');
-      const [producers, setProducers] = useState([]);
+    const VinmonopoletDB = () => {
       const [wines, setWines] = useState([]);
+      const [filteredWines, setFilteredWines] = useState([]);
+      const [favorites, setFavorites] = useState([]);
+      const [loading, setLoading] = useState(false);
       const [searchQuery, setSearchQuery] = useState('');
-      const [selectedProducer, setSelectedProducer] = useState('all');
-      const [searchingVinmonopolet, setSearchingVinmonopolet] = useState(false);
-      const [vinmonopoletResults, setVinmonopoletResults] = useState([]);
-      const [expandedRegions, setExpandedRegions] = useState({});
+      const [lastUpdate, setLastUpdate] = useState(null);
+      const [stats, setStats] = useState({});
+      const [activeTab, setActiveTab] = useState('browse');
       
-      // New wine form
-      const [newWine, setNewWine] = useState({
-        name: '',
-        producer: '',
-        vintage: '',
-        cavesUrl: '',
-        cavesPrice: '',
-        cavesStock: 'in_stock',
-        vinmonopoletUrl: '',
-        vinmonopoletPrice: '',
-        vinmonopoletStock: 'in_stock'
+      // Filters
+      const [filters, setFilters] = useState({
+        category: 'all',
+        country: 'all',
+        priceMin: '',
+        priceMax: '',
+        inStock: false
       });
 
-      // Producer categories organized by region
-      const PRODUCER_CATEGORIES = {
-        "Burgundy": [
-          "Domaine de la Romanée-Conti", "Domaine Leroy", "Domaine Armand Rousseau",
-          "Domaine Georges Roumier", "Domaine Dujac", "Domaine Leflaive",
-          "Domaine Coche-Dury", "Domaine Comte Georges de Vogüé", "Domaine Raveneau",
-          "Domaine Hubert Lignier", "Domaine Ponsot", "Domaine Denis Bachelet"
-        ],
-        "Bordeaux": [
-          "Château Lafite Rothschild", "Château Latour", "Château Margaux",
-          "Château Haut-Brion", "Château Mouton Rothschild", "Château Cheval Blanc",
-          "Château Ausone", "Château Pétrus", "Château Le Pin", "Château Lafleur"
-        ],
-        "Rhône": [
-          "Domaine Jean-Louis Chave", "Domaine Auguste Clape", "Château Rayas",
-          "Domaine Jamet", "Domaine René Rostaing", "Château de Beaucastel",
-          "Domaine du Vieux Télégraphe", "Domaine de la Mordorée"
-        ],
-        "Champagne": [
-          "Krug", "Salon", "Jacques Selosse", "Bollinger", "Louis Roederer",
-          "Pol Roger", "Taittinger", "Dom Pérignon", "Pierre Peters", "Egly-Ouriet"
-        ],
-        "Italy": [
-          "Gaja", "Giacomo Conterno", "Bruno Giacosa", "Bartolo Mascarello",
-          "Giuseppe Quintarelli", "Dal Forno Romano", "Sassicaia", "Ornellaia",
-          "Masseto", "Soldera"
-        ],
-        "Spain": [
-          "Vega Sicilia", "Pingus", "Álvaro Palacios", "Artadi", "CVNE",
-          "López de Heredia", "Marqués de Riscal", "Clos Mogador"
-        ],
-        "Germany": [
-          "Egon Müller", "J.J. Prüm", "Dönnhoff", "Keller", "Emrich-Schönleber",
-          "Schäfer-Fröhlich", "Clemens Busch"
-        ],
-        "USA": [
-          "Screaming Eagle", "Harlan Estate", "Ridge", "Dominus Estate",
-          "Shafer", "Caymus", "Opus One", "Silver Oak", "Stag's Leap"
-        ]
-      };
-
-      // Load data from storage on mount
+      // Load data on mount
       useEffect(() => {
-        loadData();
+        loadLocalData();
       }, []);
 
-      const loadData = async () => {
+      // Apply filters whenever wines or filters change
+      useEffect(() => {
+        applyFilters();
+      }, [wines, searchQuery, filters]);
+
+      const loadLocalData = async () => {
         try {
-          const producersData = await window.storage.get('wine-producers');
-          const winesData = await window.storage.get('wine-inventory');
+          const winesData = await window.storage.get('vinm-wines-db');
+          const favsData = await window.storage.get('vinm-favorites');
+          const updateData = await window.storage.get('vinm-last-update');
           
-          if (producersData?.value) {
-            setProducers(JSON.parse(producersData.value));
-          }
           if (winesData?.value) {
-            setWines(JSON.parse(winesData.value));
+            const winesList = JSON.parse(winesData.value);
+            setWines(winesList);
+            calculateStats(winesList);
+          }
+          if (favsData?.value) {
+            setFavorites(JSON.parse(favsData.value));
+          }
+          if (updateData?.value) {
+            setLastUpdate(updateData.value);
           }
         } catch (error) {
-          console.log('No existing data found, starting fresh');
+          console.log('No existing data, ready to fetch from API');
         }
       };
 
-      const saveProducers = async (updatedProducers) => {
-        setProducers(updatedProducers);
-        await window.storage.set('wine-producers', JSON.stringify(updatedProducers));
-      };
-
-      const saveWines = async (updatedWines) => {
-        setWines(updatedWines);
-        await window.storage.set('wine-inventory', JSON.stringify(updatedWines));
-      };
-
-      const addProducer = (producerName) => {
-        if (producerName && !producers.includes(producerName)) {
-          const updated = [...producers, producerName].sort();
-          saveProducers(updated);
-        }
-      };
-
-      const removeProducer = (producerName) => {
-        const updated = producers.filter(p => p !== producerName);
-        saveProducers(updated);
-        // Also remove all wines from this producer
-        const updatedWines = wines.filter(w => w.producer !== producerName);
-        saveWines(updatedWines);
-      };
-
-      const searchVinmonopolet = async (query) => {
-        setSearchingVinmonopolet(true);
-        setVinmonopoletResults([]);
-        
+      const fetchFromAPI = async () => {
+        setLoading(true);
         try {
-          // Call our backend function
-          const response = await fetch(`/.netlify/functions/search-vinmonopolet?producer=${encodeURIComponent(query)}`);
+          // Call our Netlify function that fetches from Vinmonopolet API
+          const response = await fetch('/.netlify/functions/fetch-vinmonopolet');
           const data = await response.json();
           
-          if (data.products) {
-            setVinmonopoletResults(data.products);
+          if (data.products && data.products.length > 0) {
+            setWines(data.products);
+            await window.storage.set('vinm-wines-db', JSON.stringify(data.products));
+            
+            const now = new Date().toISOString();
+            setLastUpdate(now);
+            await window.storage.set('vinm-last-update', now);
+            
+            calculateStats(data.products);
+            alert(`Success! Loaded ${data.products.length} wines from Vinmonopolet`);
+          } else {
+            alert('No products returned from API. Check your API key.');
           }
         } catch (error) {
-          console.error('Vinmonopolet search failed:', error);
-          alert('Search failed. The Vinmonopolet API might be unavailable. You can still add wines manually!');
+          console.error('Fetch error:', error);
+          alert('Failed to fetch from API. Check console for details.');
         }
+        setLoading(false);
+      };
+
+      const calculateStats = (winesList) => {
+        const categories = {};
+        const countries = {};
+        let totalValue = 0;
         
-        setSearchingVinmonopolet(false);
-      };
-
-      const addWineFromVinmonopolet = (result) => {
-        setNewWine({
-          ...newWine,
-          name: result.name || result.productName,
-          vinmonopoletUrl: result.url,
-          vinmonopoletPrice: result.price?.toString() || '',
-          vinmonopoletStock: result.stock || 'in_stock'
-        });
-        setActiveTab('add');
-      };
-
-      const addWine = async () => {
-        if (!newWine.name || !newWine.producer) {
-          alert('Please fill in at least wine name and producer');
-          return;
-        }
-
-        const wine = {
-          id: Date.now().toString(),
-          ...newWine,
-          priceHistory: {
-            caves: newWine.cavesPrice ? [{
-              price: parseFloat(newWine.cavesPrice),
-              date: new Date().toISOString(),
-              stock: newWine.cavesStock
-            }] : [],
-            vinmonopolet: newWine.vinmonopoletPrice ? [{
-              price: parseFloat(newWine.vinmonopoletPrice),
-              date: new Date().toISOString(),
-              stock: newWine.vinmonopoletStock
-            }] : []
+        winesList.forEach(wine => {
+          // Count by category
+          const cat = wine.productType || 'Unknown';
+          categories[cat] = (categories[cat] || 0) + 1;
+          
+          // Count by country
+          const country = wine.mainCountry?.name || 'Unknown';
+          countries[country] = (countries[country] || 0) + 1;
+          
+          // Sum prices
+          if (wine.price) {
+            totalValue += wine.price;
           }
-        };
-
-        const updated = [...wines, wine];
-        await saveWines(updated);
-        
-        // Reset form
-        setNewWine({
-          name: '',
-          producer: '',
-          vintage: '',
-          cavesUrl: '',
-          cavesPrice: '',
-          cavesStock: 'in_stock',
-          vinmonopoletUrl: '',
-          vinmonopoletPrice: '',
-          vinmonopoletStock: 'in_stock'
         });
-        
-        setActiveTab('wines');
+
+        setStats({
+          total: winesList.length,
+          categories: Object.entries(categories).sort((a, b) => b[1] - a[1]),
+          countries: Object.entries(countries).sort((a, b) => b[1] - a[1]),
+          totalValue
+        });
       };
 
-      const deleteWine = async (id) => {
-        const updated = wines.filter(w => w.id !== id);
-        await saveWines(updated);
+      const applyFilters = () => {
+        let filtered = wines;
+
+        // Search query
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filtered = filtered.filter(wine => 
+            wine.name?.toLowerCase().includes(query) ||
+            wine.mainProducer?.name?.toLowerCase().includes(query) ||
+            wine.mainCountry?.name?.toLowerCase().includes(query)
+          );
+        }
+
+        // Category filter
+        if (filters.category !== 'all') {
+          filtered = filtered.filter(wine => wine.productType === filters.category);
+        }
+
+        // Country filter
+        if (filters.country !== 'all') {
+          filtered = filtered.filter(wine => wine.mainCountry?.name === filters.country);
+        }
+
+        // Price range
+        if (filters.priceMin) {
+          filtered = filtered.filter(wine => wine.price >= parseFloat(filters.priceMin));
+        }
+        if (filters.priceMax) {
+          filtered = filtered.filter(wine => wine.price <= parseFloat(filters.priceMax));
+        }
+
+        // In stock only
+        if (filters.inStock) {
+          filtered = filtered.filter(wine => wine.stock?.stockLevel > 0);
+        }
+
+        setFilteredWines(filtered);
       };
 
-      const toggleRegion = (region) => {
-        setExpandedRegions(prev => ({
-          ...prev,
-          [region]: !prev[region]
-        }));
+      const toggleFavorite = async (wineCode) => {
+        let updated;
+        if (favorites.includes(wineCode)) {
+          updated = favorites.filter(code => code !== wineCode);
+        } else {
+          updated = [...favorites, wineCode];
+        }
+        setFavorites(updated);
+        await window.storage.set('vinm-favorites', JSON.stringify(updated));
       };
 
-      const selectProducer = (producer) => {
-        addProducer(producer);
+      const exportData = () => {
+        const dataStr = JSON.stringify(wines, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `vinmonopolet-wines-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
       };
 
-      const getPriceChange = (history) => {
-        if (!history || history.length < 2) return null;
-        const latest = history[history.length - 1].price;
-        const previous = history[history.length - 2].price;
-        const change = ((latest - previous) / previous * 100).toFixed(1);
-        return { change, isIncrease: latest > previous };
+      const getFavoriteWines = () => {
+        return wines.filter(wine => favorites.includes(wine.code));
       };
-
-      const filteredWines = wines.filter(wine => {
-        const matchesSearch = wine.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                             wine.producer.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesProducer = selectedProducer === 'all' || wine.producer === selectedProducer;
-        return matchesSearch && matchesProducer;
-      });
 
       return (
-        <div className="w-full max-w-7xl mx-auto p-6 bg-gray-50">
-          <div className="bg-white rounded-lg shadow-lg">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="max-w-7xl mx-auto p-4 md:p-6">
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-900 to-red-900 text-white p-6 rounded-t-lg">
-              <h1 className="text-3xl font-bold">Wine Inventory Tracker</h1>
-              <p className="text-purple-200 mt-2">Track wines from Caves Carrière & Vinmonopolet</p>
+            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                    <Database className="text-purple-600" size={32} />
+                    Vinmonopolet Wine Database
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    Complete catalog of {stats.total?.toLocaleString() || 0} wines
+                  </p>
+                  {lastUpdate && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Last updated: {new Date(lastUpdate).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={fetchFromAPI}
+                    disabled={loading}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={18} />
+                        Update from API
+                      </>
+                    )}
+                  </button>
+                  {wines.length > 0 && (
+                    <button
+                      onClick={exportData}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Download size={18} />
+                      Export
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Stats */}
+              {stats.total > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div className="bg-purple-50 p-3 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-900">{stats.total.toLocaleString()}</div>
+                    <div className="text-sm text-purple-700">Total Wines</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-900">{stats.categories?.length || 0}</div>
+                    <div className="text-sm text-blue-700">Categories</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="text-2xl font-bold text-green-900">{stats.countries?.length || 0}</div>
+                    <div className="text-sm text-green-700">Countries</div>
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-900">{favorites.length}</div>
+                    <div className="text-sm text-orange-700">Favorites</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b bg-gray-100 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('wines')}
-                className={\`px-6 py-3 font-medium transition-colors whitespace-nowrap \${
-                  activeTab === 'wines'
-                    ? 'bg-white text-purple-900 border-b-2 border-purple-900'
-                    : 'text-gray-600 hover:text-purple-900'
-                }\`}
-              >
-                Collection ({wines.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('add')}
-                className={\`px-6 py-3 font-medium transition-colors whitespace-nowrap \${
-                  activeTab === 'add'
-                    ? 'bg-white text-purple-900 border-b-2 border-purple-900'
-                    : 'text-gray-600 hover:text-purple-900'
-                }\`}
-              >
-                Add Wine
-              </button>
-              <button
-                onClick={() => setActiveTab('producers')}
-                className={\`px-6 py-3 font-medium transition-colors whitespace-nowrap \${
-                  activeTab === 'producers'
-                    ? 'bg-white text-purple-900 border-b-2 border-purple-900'
-                    : 'text-gray-600 hover:text-purple-900'
-                }\`}
-              >
-                Producers ({producers.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('search')}
-                className={\`px-6 py-3 font-medium transition-colors whitespace-nowrap \${
-                  activeTab === 'search'
-                    ? 'bg-white text-purple-900 border-b-2 border-purple-900'
-                    : 'text-gray-600 hover:text-purple-900'
-                }\`}
-              >
-                Search Vinmonopolet
-              </button>
-            </div>
+            <div className="bg-white rounded-lg shadow-lg mb-6">
+              <div className="flex border-b overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('browse')}
+                  className={`px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'browse'
+                      ? 'bg-purple-50 text-purple-900 border-b-2 border-purple-900'
+                      : 'text-gray-600 hover:text-purple-900'
+                  }`}
+                >
+                  Browse All ({filteredWines.length.toLocaleString()})
+                </button>
+                <button
+                  onClick={() => setActiveTab('favorites')}
+                  className={`px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'favorites'
+                      ? 'bg-purple-50 text-purple-900 border-b-2 border-purple-900'
+                      : 'text-gray-600 hover:text-purple-900'
+                  }`}
+                >
+                  <Star size={16} className="inline mr-1" />
+                  Favorites ({favorites.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('stats')}
+                  className={`px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'stats'
+                      ? 'bg-purple-50 text-purple-900 border-b-2 border-purple-900'
+                      : 'text-gray-600 hover:text-purple-900'
+                  }`}
+                >
+                  <TrendingUp size={16} className="inline mr-1" />
+                  Statistics
+                </button>
+              </div>
 
-            {/* Content */}
-            <div className="p-6">
-              {/* Producers Tab */}
-              {activeTab === 'producers' && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4 text-gray-800">Your Favorite Producers</h2>
-                  
-                  {/* Selected Producers */}
-                  {producers.length > 0 && (
-                    <div className="mb-6 p-4 bg-purple-50 rounded-lg">
-                      <h3 className="font-semibold text-purple-900 mb-3">Selected Producers:</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {producers.map(producer => (
-                          <div key={producer} className="bg-white px-3 py-2 rounded-lg shadow-sm flex items-center gap-2">
-                            <span className="text-sm font-medium">{producer}</span>
-                            <button
-                              onClick={() => removeProducer(producer)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))}
+              {/* Content */}
+              <div className="p-6">
+                {activeTab === 'browse' && (
+                  <>
+                    {/* Search and Filters */}
+                    <div className="mb-6 space-y-4">
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                          <input
+                            type="text"
+                            placeholder="Search wines, producers, countries..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Producer Selection by Region */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-gray-800 mb-3">Select Producers by Region:</h3>
-                    {Object.entries(PRODUCER_CATEGORIES).map(([region, regionProducers]) => (
-                      <div key={region} className="border rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => toggleRegion(region)}
-                          className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 flex items-center justify-between transition-colors"
+                      {/* Filter Controls */}
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <select
+                          value={filters.category}
+                          onChange={(e) => setFilters({...filters, category: e.target.value})}
+                          className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
                         >
-                          <span className="font-semibold text-gray-800">{region}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">
-                              ({regionProducers.filter(p => producers.includes(p)).length}/{regionProducers.length})
-                            </span>
-                            {expandedRegions[region] ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                          </div>
-                        </button>
-                        
-                        {expandedRegions[region] && (
-                          <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {regionProducers.map(producer => {
-                              const isSelected = producers.includes(producer);
-                              return (
-                                <button
-                                  key={producer}
-                                  onClick={() => isSelected ? removeProducer(producer) : selectProducer(producer)}
-                                  className={\`px-3 py-2 rounded-lg text-left flex items-center gap-2 transition-colors \${
-                                    isSelected
-                                      ? 'bg-purple-100 text-purple-900 hover:bg-purple-200'
-                                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                                  }\`}
-                                >
-                                  <div className={\`w-5 h-5 rounded border-2 flex items-center justify-center \${
-                                    isSelected ? 'bg-purple-900 border-purple-900' : 'border-gray-300'
-                                  }\`}>
-                                    {isSelected && <Check size={14} className="text-white" />}
-                                  </div>
-                                  <span className="text-sm">{producer}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
+                          <option value="all">All Categories</option>
+                          {stats.categories?.slice(0, 10).map(([cat, count]) => (
+                            <option key={cat} value={cat}>{cat} ({count})</option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={filters.country}
+                          onChange={(e) => setFilters({...filters, country: e.target.value})}
+                          className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value="all">All Countries</option>
+                          {stats.countries?.slice(0, 15).map(([country, count]) => (
+                            <option key={country} value={country}>{country} ({count})</option>
+                          ))}
+                        </select>
+
+                        <input
+                          type="number"
+                          placeholder="Min price"
+                          value={filters.priceMin}
+                          onChange={(e) => setFilters({...filters, priceMin: e.target.value})}
+                          className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+
+                        <input
+                          type="number"
+                          placeholder="Max price"
+                          value={filters.priceMax}
+                          onChange={(e) => setFilters({...filters, priceMax: e.target.value})}
+                          className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+
+                        <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={filters.inStock}
+                            onChange={(e) => setFilters({...filters, inStock: e.target.checked})}
+                            className="w-4 h-4 text-purple-600 rounded"
+                          />
+                          <span className="text-sm">In Stock Only</span>
+                        </label>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Search Vinmonopolet Tab */}
-              {activeTab === 'search' && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4 text-gray-800">Search Vinmonopolet</h2>
-                  
-                  <div className="mb-6">
-                    <div className="flex gap-2">
-                      <input
-                        id="vinm-search-input"
-                        type="text"
-                        placeholder="Search for wines on Vinmonopolet..."
-                        className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            searchVinmonopolet(e.target.value);
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const input = document.getElementById('vinm-search-input');
-                          searchVinmonopolet(input.value);
-                        }}
-                        disabled={searchingVinmonopolet}
-                        className="px-6 py-2 bg-purple-900 text-white rounded-lg hover:bg-purple-800 disabled:bg-gray-400 flex items-center gap-2"
-                      >
-                        {searchingVinmonopolet ? <RefreshCw size={18} className="animate-spin" /> : <Search size={18} />}
-                        Search
-                      </button>
                     </div>
-                  </div>
 
-                  {searchingVinmonopolet && (
-                    <div className="text-center py-8 text-gray-600">
-                      <RefreshCw size={32} className="animate-spin mx-auto mb-2" />
-                      Searching Vinmonopolet...
-                    </div>
-                  )}
-
-                  {!searchingVinmonopolet && vinmonopoletResults.length > 0 && (
+                    {/* Wine List */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-gray-800">Results ({vinmonopoletResults.length}):</h3>
-                      {vinmonopoletResults.map((result, idx) => (
-                        <div key={idx} className="border rounded-lg p-4 flex items-start gap-4 hover:bg-gray-50">
+                      {filteredWines.slice(0, 100).map(wine => (
+                        <div key={wine.code} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-start gap-2">
+                                <h3 className="text-lg font-semibold text-gray-900">{wine.name}</h3>
+                                <button
+                                  onClick={() => toggleFavorite(wine.code)}
+                                  className={`mt-1 ${favorites.includes(wine.code) ? 'text-yellow-500' : 'text-gray-300'} hover:text-yellow-500`}
+                                >
+                                  <Star size={20} fill={favorites.includes(wine.code) ? 'currentColor' : 'none'} />
+                                </button>
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1 space-y-1">
+                                {wine.mainProducer?.name && <div>Producer: {wine.mainProducer.name}</div>}
+                                {wine.mainCountry?.name && <div>Country: {wine.mainCountry.name}</div>}
+                                {wine.productType && <div>Type: {wine.productType}</div>}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-purple-900">NOK {wine.price}</div>
+                              {wine.pricePerLiter && (
+                                <div className="text-sm text-gray-500">{wine.pricePerLiter} kr/L</div>
+                              )}
+                              {wine.url && (
+                                <a
+                                  href={wine.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-purple-600 hover:underline flex items-center gap-1 justify-end mt-2"
+                                >
+                                  View <ExternalLink size={14} />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {filteredWines.length > 100 && (
+                        <div className="text-center py-4 text-gray-600">
+                          Showing 100 of {filteredWines.length.toLocaleString()} wines. Refine your search to see more.
+                        </div>
+                      )}
+                      
+                      {filteredWines.length === 0 && wines.length > 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                          No wines match your search criteria
+                        </div>
+                      )}
+                      
+                      {wines.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                          <Database size={48} className="mx-auto mb-4 text-gray-400" />
+                          <p className="text-lg mb-2">No data loaded yet</p>
+                          <p className="text-sm">Click "Update from API" to fetch the wine database</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'favorites' && (
+                  <div className="space-y-3">
+                    {getFavoriteWines().map(wine => (
+                      <div key={wine.code} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                        <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
-                            <h4 className="font-semibold">{result.name || result.productName}</h4>
-                            {result.price && <p className="text-sm text-gray-600">NOK {result.price}</p>}
-                            {result.url && (
-                              <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-xs text-purple-600 hover:underline flex items-center gap-1">
-                                View on Vinmonopolet <ExternalLink size={12} />
+                            <div className="flex items-start gap-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{wine.name}</h3>
+                              <button
+                                onClick={() => toggleFavorite(wine.code)}
+                                className="text-yellow-500 hover:text-yellow-600 mt-1"
+                              >
+                                <Star size={20} fill="currentColor" />
+                              </button>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {wine.mainProducer?.name && <div>Producer: {wine.mainProducer.name}</div>}
+                              {wine.mainCountry?.name && <div>Country: {wine.mainCountry.name}</div>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-purple-900">NOK {wine.price}</div>
+                            {wine.url && (
+                              <a
+                                href={wine.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-purple-600 hover:underline flex items-center gap-1 justify-end mt-2"
+                              >
+                                View <ExternalLink size={14} />
                               </a>
                             )}
                           </div>
-                          <button
-                            onClick={() => addWineFromVinmonopolet(result)}
-                            className="px-4 py-2 bg-purple-900 text-white rounded-lg hover:bg-purple-800 whitespace-nowrap"
-                          >
-                            Add to Collection
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {!searchingVinmonopolet && vinmonopoletResults.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>Search for wines to see results</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Add Wine Tab */}
-              {activeTab === 'add' && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4 text-gray-800">Add New Wine</h2>
-                  
-                  <div className="space-y-4 max-w-2xl">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Wine Name *</label>
-                      <input
-                        type="text"
-                        value={newWine.name}
-                        onChange={(e) => setNewWine({...newWine, name: e.target.value})}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="e.g., Romanée-Conti Grand Cru"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Producer *</label>
-                      <select
-                        value={newWine.producer}
-                        onChange={(e) => setNewWine({...newWine, producer: e.target.value})}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                      >
-                        <option value="">Select a producer</option>
-                        {producers.map(producer => (
-                          <option key={producer} value={producer}>{producer}</option>
-                        ))}
-                      </select>
-                      {producers.length === 0 && (
-                        <p className="text-sm text-gray-500 mt-1">Add producers in the "Producers" tab first</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Vintage</label>
-                      <input
-                        type="text"
-                        value={newWine.vintage}
-                        onChange={(e) => setNewWine({...newWine, vintage: e.target.value})}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                        placeholder="e.g., 2018"
-                      />
-                    </div>
-
-                    {/* Caves Carrière Section */}
-                    <div className="border-t pt-4">
-                      <h3 className="font-semibold text-gray-800 mb-3">Caves Carrière</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Product URL</label>
-                          <input
-                            type="url"
-                            value={newWine.cavesUrl}
-                            onChange={(e) => setNewWine({...newWine, cavesUrl: e.target.value})}
-                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            placeholder="https://www.caves-carriere.fr/..."
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={newWine.cavesPrice}
-                              onChange={(e) => setNewWine({...newWine, cavesPrice: e.target.value})}
-                              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Stock Status</label>
-                            <select
-                              value={newWine.cavesStock}
-                              onChange={(e) => setNewWine({...newWine, cavesStock: e.target.value})}
-                              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            >
-                              <option value="in_stock">In Stock</option>
-                              <option value="out_of_stock">Out of Stock</option>
-                            </select>
-                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Vinmonopolet Section */}
-                    <div className="border-t pt-4">
-                      <h3 className="font-semibold text-gray-800 mb-3">Vinmonopolet</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Product URL</label>
-                          <input
-                            type="url"
-                            value={newWine.vinmonopoletUrl}
-                            onChange={(e) => setNewWine({...newWine, vinmonopoletUrl: e.target.value})}
-                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            placeholder="https://www.vinmonopolet.no/..."
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (NOK)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={newWine.vinmonopoletPrice}
-                              onChange={(e) => setNewWine({...newWine, vinmonopoletPrice: e.target.value})}
-                              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Stock Status</label>
-                            <select
-                              value={newWine.vinmonopoletStock}
-                              onChange={(e) => setNewWine({...newWine, vinmonopoletStock: e.target.value})}
-                              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            >
-                              <option value="in_stock">In Stock</option>
-                              <option value="out_of_stock">Out of Stock</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={addWine}
-                      className="w-full px-6 py-3 bg-purple-900 text-white rounded-lg hover:bg-purple-800 font-medium flex items-center justify-center gap-2"
-                    >
-                      <Plus size={20} />
-                      Add Wine to Collection
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Wine Collection Tab */}
-              {activeTab === 'wines' && (
-                <div>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">Your Wine Collection</h2>
-                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                      <input
-                        type="text"
-                        placeholder="Search wines..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 w-full md:w-auto"
-                      />
-                      <select
-                        value={selectedProducer}
-                        onChange={(e) => setSelectedProducer(e.target.value)}
-                        className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 w-full md:w-auto"
-                      >
-                        <option value="all">All Producers</option>
-                        {producers.map(producer => (
-                          <option key={producer} value={producer}>{producer}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {filteredWines.map(wine => {
-                      const cavesHistory = wine.priceHistory?.caves || [];
-                      const vinmHistory = wine.priceHistory?.vinmonopolet || [];
-                      const latestCaves = cavesHistory[cavesHistory.length - 1];
-                      const latestVinm = vinmHistory[vinmHistory.length - 1];
-                      const cavesChange = getPriceChange(cavesHistory);
-                      const vinmChange = getPriceChange(vinmHistory);
-
-                      return (
-                        <div key={wine.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow bg-white">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-900">{wine.name}</h3>
-                              <p className="text-gray-600">{wine.producer}</p>
-                              {wine.vintage && <p className="text-sm text-gray-500">Vintage: {wine.vintage}</p>}
-                            </div>
-                            <button
-                              onClick={() => deleteWine(wine.id)}
-                              className="text-red-600 hover:text-red-800 p-2"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Caves Carrière */}
-                            {latestCaves && (
-                              <div className="bg-purple-50 p-3 rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="font-semibold text-purple-900">Caves Carrière</h4>
-                                  {wine.cavesUrl && (
-                                    <a
-                                      href={wine.cavesUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-purple-900 hover:text-purple-700"
-                                    >
-                                      <ExternalLink size={16} />
-                                    </a>
-                                  )}
-                                </div>
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-2xl font-bold text-purple-900">€{latestCaves.price}</span>
-                                    {cavesChange && (
-                                      <div className={\`flex items-center text-sm \${cavesChange.isIncrease ? 'text-red-600' : 'text-green-600'}\`}>
-                                        {cavesChange.isIncrease ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                        {Math.abs(cavesChange.change)}%
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className={\`inline-block px-2 py-1 text-xs rounded \${
-                                    latestCaves.stock === 'in_stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                  }\`}>
-                                    {latestCaves.stock === 'in_stock' ? 'In Stock' : 'Out of Stock'}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Vinmonopolet */}
-                            {latestVinm && (
-                              <div className="bg-blue-50 p-3 rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="font-semibold text-blue-900">Vinmonopolet</h4>
-                                  {wine.vinmonopoletUrl && (
-                                    <a
-                                      href={wine.vinmonopoletUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-900 hover:text-blue-700"
-                                    >
-                                      <ExternalLink size={16} />
-                                    </a>
-                                  )}
-                                </div>
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-2xl font-bold text-blue-900">NOK {latestVinm.price}</span>
-                                    {vinmChange && (
-                                      <div className={\`flex items-center text-sm \${vinmChange.isIncrease ? 'text-red-600' : 'text-green-600'}\`}>
-                                        {vinmChange.isIncrease ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                        {Math.abs(vinmChange.change)}%
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className={\`inline-block px-2 py-1 text-xs rounded \${
-                                    latestVinm.stock === 'in_stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                  }\`}>
-                                    {latestVinm.stock === 'in_stock' ? 'In Stock' : 'Out of Stock'}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    ))}
                     
-                    {filteredWines.length === 0 && (
+                    {favorites.length === 0 && (
                       <div className="text-center py-12 text-gray-500">
-                        <p className="text-lg">No wines found</p>
-                        <p className="text-sm mt-2">
-                          {wines.length === 0 
-                            ? "Start by adding producers in the 'Producers' tab, then add your first wine!"
-                            : "Try adjusting your search or filter"}
-                        </p>
+                        <Star size={48} className="mx-auto mb-4 text-gray-400" />
+                        <p>No favorites yet. Click the star icon on wines to add them here!</p>
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+
+                {activeTab === 'stats' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Top Categories</h3>
+                      <div className="space-y-2">
+                        {stats.categories?.slice(0, 10).map(([category, count]) => (
+                          <div key={category} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span className="font-medium">{category}</span>
+                            <span className="text-purple-600 font-bold">{count.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Top Countries</h3>
+                      <div className="space-y-2">
+                        {stats.countries?.slice(0, 15).map(([country, count]) => (
+                          <div key={country} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span className="font-medium">{country}</span>
+                            <span className="text-blue-600 font-bold">{count.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       );
     };
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<WineTracker />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<VinmonopoletDB />);
   </script>
 
 </body>
