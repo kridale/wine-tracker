@@ -1,105 +1,138 @@
+// Netlify serverless function to search Vinmonopolet
+// This scrapes the public Vinmonopolet website since their API requires authentication
+
 exports.handler = async (event) => {
-  const producer = event.queryStringParameters.producer;
-  
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json',
-  };
+const producer = event.queryStringParameters.producer;
 
-  if (!producer) {
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({ error: 'Producer name required' })
-    };
-  }
-
-  try {
-    // Try the facet search endpoint
-    const searchUrl = `https://www.vinmonopolet.no/vmpSite/search/productSearch?searchType=product&q=${encodeURIComponent(producer)}&currentPage=0`;
-    
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-
-    const contentType = response.headers.get('content-type');
-    const text = await response.text();
-    
-    // Log for debugging
-    console.log('Response status:', response.status);
-    console.log('Content-Type:', contentType);
-    console.log('Response preview:', text.substring(0, 200));
-
-    if (!response.ok) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          products: [],
-          note: `Vinmonopolet API unavailable. Search manually: https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`,
-          searchUrl: `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`
-        })
-      };
-    }
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      // If not JSON, return search link
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          products: [],
-          note: `Auto-search unavailable. Click to search: https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`,
-          searchUrl: `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`
-        })
-      };
-    }
-
-    // Try to extract products from various possible formats
-    const products = (
-      data.products || 
-      data.productSearchResult?.products || 
-      data.results ||
-      []
-    ).slice(0, 20).map(p => ({
-      name: p.name || p.productName || 'Unknown',
-      price: p.price?.value || p.price || 0,
-      stock: p.stock || p.status || 'Check availability',
-      productId: p.code || p.id,
-      url: p.url ? `https://www.vinmonopolet.no${p.url}` : `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`,
-      image: p.images?.[0]?.url || p.image
-    }));
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        products,
-        count: products.length,
-        producer,
-        searchUrl: `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`
-      })
-    };
-
-  } catch (error) {
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ 
-        products: [],
-        note: `Search temporarily unavailable. Click to search manually: https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`,
-        searchUrl: `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`,
-        error: error.message
-      })
-    };
-  }
+const headers = {
+‘Access-Control-Allow-Origin’: ‘*’,
+‘Access-Control-Allow-Headers’: ‘Content-Type’,
+‘Content-Type’: ‘application/json’,
 };
+
+if (!producer) {
+return {
+statusCode: 400,
+headers,
+body: JSON.stringify({ error: ‘Producer name required’ })
+};
+}
+
+try {
+// Use Vinmonopolet’s public search endpoint
+const searchUrl = `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}&searchType=product`;
+
+```
+const response = await fetch(searchUrl, {
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': 'https://www.vinmonopolet.no/'
+  }
+});
+
+if (!response.ok) {
+  console.error('Vinmonopolet returned:', response.status);
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      products: [],
+      note: 'Vinmonopolet search unavailable. You can still add wines manually by getting the URL from vinmonopolet.no'
+    })
+  };
+}
+
+const html = await response.text();
+
+// Parse the HTML to extract product information
+// This is a basic parser - Vinmonopolet's HTML structure
+const products = [];
+
+// Look for product cards in the HTML
+// The structure typically includes product name, price, and URL
+const productMatches = html.match(/<article[^>]*class="[^"]*product-item[^"]*"[^>]*>[\s\S]*?<\/article>/gi) || [];
+
+for (const match of productMatches.slice(0, 20)) { // Limit to 20 results
+  try {
+    // Extract product name
+    const nameMatch = match.match(/<h2[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/i) || 
+                     match.match(/data-product-name="([^"]+)"/i) ||
+                     match.match(/<span[^>]*class="[^"]*product-name[^"]*"[^>]*>([^<]+)<\/span>/i);
+    const name = nameMatch ? nameMatch[1].trim() : '';
     
+    // Extract price
+    const priceMatch = match.match(/data-product-price="([^"]+)"/i) ||
+                      match.match(/<span[^>]*class="[^"]*price[^"]*"[^>]*>[\s\S]*?([0-9]+[,.]?[0-9]*)/i);
+    const price = priceMatch ? parseFloat(priceMatch[1].replace(',', '.')) : null;
+    
+    // Extract product code/ID
+    const codeMatch = match.match(/data-product-code="([^"]+)"/i) ||
+                     match.match(/\/p\/(\d+)/);
+    const code = codeMatch ? codeMatch[1] : '';
+    
+    // Extract URL
+    const urlMatch = match.match(/<a[^>]*href="([^"]*\/p\/[^"]+)"/i);
+    const productPath = urlMatch ? urlMatch[1] : '';
+    const url = productPath ? `https://www.vinmonopolet.no${productPath}` : '';
+    
+    // Check stock status
+    const inStock = !match.includes('out-of-stock') && 
+                   !match.includes('Utsolgt') &&
+                   !match.includes('unavailable');
+    
+    if (name && code) {
+      products.push({
+        code,
+        name,
+        price,
+        url,
+        stock: inStock ? 'in_stock' : 'out_of_stock',
+        productName: name
+      });
+    }
+  } catch (parseError) {
+    console.error('Error parsing product:', parseError);
+    // Continue with other products
+  }
+}
+
+// If we couldn't parse products from HTML, return a helpful message
+if (products.length === 0) {
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      products: [],
+      note: `No results found for "${producer}". Try searching directly on vinmonopolet.no and add wines manually.`,
+      searchUrl: `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`
+    })
+  };
+}
+
+return {
+  statusCode: 200,
+  headers,
+  body: JSON.stringify({
+    products,
+    count: products.length,
+    producer
+  })
+};
+```
+
+} catch (error) {
+console.error(‘Search error:’, error);
+return {
+statusCode: 200,
+headers,
+body: JSON.stringify({
+products: [],
+error: ‘Search temporarily unavailable’,
+note: ‘You can still add wines manually by visiting vinmonopolet.no’,
+searchUrl: `https://www.vinmonopolet.no/search?q=${encodeURIComponent(producer)}`
+})
+};
+}
+};
