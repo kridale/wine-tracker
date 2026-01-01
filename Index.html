@@ -69,20 +69,45 @@
       const fetchFromAPI = async () => {
         setLoading(true);
         try {
-          // Call our Netlify function that fetches from Vinmonopolet API
-          const response = await fetch('/.netlify/functions/fetch-vinmonopolet');
-          const data = await response.json();
+          let allProducts = [];
+          let start = 0;
+          const batchSize = 1000;
+          let hasMore = true;
           
-          if (data.products && data.products.length > 0) {
-            setWines(data.products);
-            await window.storage.set('vinm-wines-db', JSON.stringify(data.products));
+          while (hasMore) {
+            const response = await fetch(`/.netlify/functions/fetch-vinmonopolet?maxResults=${batchSize}&start=${start}`);
+            const data = await response.json();
+            
+            if (data.error) {
+              alert(`API Error: ${data.message}`);
+              break;
+            }
+            
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              hasMore = data.hasMore;
+              start += batchSize;
+              
+              console.log(`Fetched ${allProducts.length} wines so far...`);
+            } else {
+              hasMore = false;
+            }
+            
+            if (allProducts.length >= 15000) {
+              hasMore = false;
+            }
+          }
+          
+          if (allProducts.length > 0) {
+            setWines(allProducts);
+            await window.storage.set('vinm-wines-db', JSON.stringify(allProducts));
             
             const now = new Date().toISOString();
             setLastUpdate(now);
             await window.storage.set('vinm-last-update', now);
             
-            calculateStats(data.products);
-            alert(`Success! Loaded ${data.products.length} wines from Vinmonopolet`);
+            calculateStats(allProducts);
+            alert(`Success! Loaded ${allProducts.length} wines from Vinmonopolet`);
           } else {
             alert('No products returned from API. Check your API key.');
           }
