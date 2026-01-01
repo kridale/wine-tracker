@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wine Store Inventory Tracker</title>
+    <title>Vinmonopolet Inventory Tracker</title>
     <style>
         * {
             margin: 0;
@@ -15,13 +15,13 @@
 ```
     body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
         min-height: 100vh;
         padding: 20px;
     }
 
     .container {
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
         background: white;
         border-radius: 20px;
@@ -30,7 +30,7 @@
     }
 
     header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
         color: white;
         padding: 30px;
         text-align: center;
@@ -71,8 +71,8 @@
 
     input[type="text"]:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #8B0000;
+        box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
     }
 
     .btn {
@@ -86,13 +86,13 @@
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
         color: white;
     }
 
     .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 5px 15px rgba(139, 0, 0, 0.4);
     }
 
     .btn-secondary {
@@ -104,6 +104,16 @@
         background: #5a6268;
     }
 
+    .filter-section {
+        margin-bottom: 20px;
+    }
+
+    .filter-section h3 {
+        margin-bottom: 10px;
+        color: #2c3e50;
+        font-size: 1.1em;
+    }
+
     .filter-buttons {
         display: flex;
         gap: 10px;
@@ -112,9 +122,9 @@
 
     .filter-btn {
         padding: 8px 20px;
-        border: 2px solid #667eea;
+        border: 2px solid #8B0000;
         background: white;
-        color: #667eea;
+        color: #8B0000;
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.3s;
@@ -122,7 +132,7 @@
     }
 
     .filter-btn:hover, .filter-btn.active {
-        background: #667eea;
+        background: #8B0000;
         color: white;
     }
 
@@ -135,7 +145,7 @@
 
     .stat-card {
         flex: 1;
-        min-width: 200px;
+        min-width: 150px;
         padding: 20px;
         background: white;
         border-radius: 10px;
@@ -145,7 +155,7 @@
     .stat-number {
         font-size: 2em;
         font-weight: bold;
-        color: #667eea;
+        color: #8B0000;
     }
 
     .stat-label {
@@ -155,9 +165,10 @@
 
     .wine-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 20px;
         padding: 30px;
+        min-height: 400px;
     }
 
     .wine-card {
@@ -168,12 +179,14 @@
         transition: all 0.3s;
         cursor: pointer;
         border: 2px solid transparent;
+        display: flex;
+        gap: 15px;
     }
 
     .wine-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        border-color: #667eea;
+        border-color: #8B0000;
     }
 
     .wine-card.favorite {
@@ -181,17 +194,61 @@
         background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
     }
 
+    .wine-image {
+        width: 80px;
+        height: 120px;
+        object-fit: contain;
+        flex-shrink: 0;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .wine-info {
+        flex: 1;
+    }
+
     .wine-name {
-        font-size: 1.2em;
+        font-size: 1.1em;
         font-weight: bold;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         color: #2c3e50;
     }
 
-    .wine-id {
-        color: #6c757d;
+    .wine-details {
         font-size: 0.9em;
-        margin-bottom: 15px;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+
+    .wine-price {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #8B0000;
+        margin-top: 10px;
+    }
+
+    .wine-stock {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85em;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+
+    .stock-available {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .stock-order {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .stock-unavailable {
+        background: #f8d7da;
+        color: #721c24;
     }
 
     .favorite-btn {
@@ -200,17 +257,65 @@
         font-size: 24px;
         cursor: pointer;
         transition: transform 0.3s;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    .wine-card {
+        position: relative;
     }
 
     .favorite-btn:hover {
         transform: scale(1.2);
     }
 
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        background: #f8f9fa;
+    }
+
+    .page-btn {
+        padding: 8px 16px;
+        border: 2px solid #8B0000;
+        background: white;
+        color: #8B0000;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+        background: #8B0000;
+        color: white;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .page-btn.active {
+        background: #8B0000;
+        color: white;
+    }
+
+    .page-info {
+        padding: 8px 16px;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
     .loading {
         text-align: center;
         padding: 50px;
         font-size: 1.5em;
-        color: #667eea;
+        color: #8B0000;
     }
 
     .loading::after {
@@ -235,7 +340,7 @@
 
     .progress-fill {
         height: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
         transition: width 0.3s;
         display: flex;
         align-items: center;
@@ -262,6 +367,39 @@
         font-size: 2em;
         margin-bottom: 10px;
     }
+
+    .type-filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+    }
+
+    .type-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .type-checkbox:hover {
+        border-color: #8B0000;
+    }
+
+    .type-checkbox input[type="checkbox"] {
+        cursor: pointer;
+    }
+
+    .type-checkbox.checked {
+        background: #8B0000;
+        color: white;
+        border-color: #8B0000;
+    }
 </style>
 ```
 
@@ -270,25 +408,59 @@
     <div class="container">
         <header>
             <h1>🍷 Vinmonopolet Inventory</h1>
-            <p class="subtitle">Complete product catalogue from Vinmonopolet</p>
+            <p class="subtitle">Complete product catalogue - 62,890 products</p>
         </header>
 
 ```
     <div class="controls">
         <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Search wines by name or ID...">
+            <input type="text" id="searchInput" placeholder="Search by name, product ID, or vintage...">
             <button class="btn btn-primary" onclick="updateFromAPI()">Update from API</button>
         </div>
 
+        <div class="filter-section">
+            <h3>Product Types</h3>
+            <div class="type-filters" id="typeFilters">
+                <label class="type-checkbox">
+                    <input type="checkbox" value="Rødvin" checked onchange="applyFilters()">
+                    <span>🍷 Red Wine</span>
+                </label>
+                <label class="type-checkbox">
+                    <input type="checkbox" value="Hvitvin" checked onchange="applyFilters()">
+                    <span>🥂 White Wine</span>
+                </label>
+                <label class="type-checkbox">
+                    <input type="checkbox" value="Musserende vin" checked onchange="applyFilters()">
+                    <span>🍾 Sparkling Wine</span>
+                </label>
+                <label class="type-checkbox">
+                    <input type="checkbox" value="Rosévin" onchange="applyFilters()">
+                    <span>🌸 Rosé</span>
+                </label>
+                <label class="type-checkbox">
+                    <input type="checkbox" value="Brennevin" onchange="applyFilters()">
+                    <span>🥃 Spirits</span>
+                </label>
+                <label class="type-checkbox">
+                    <input type="checkbox" value="Øl" onchange="applyFilters()">
+                    <span>🍺 Beer</span>
+                </label>
+            </div>
+        </div>
+
         <div class="filter-buttons">
-            <button class="filter-btn active" onclick="filterWines('all')">All Wines</button>
+            <button class="filter-btn active" onclick="filterWines('all')">All Products</button>
             <button class="filter-btn" onclick="filterWines('favorites')">⭐ Favorites</button>
         </div>
 
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-number" id="totalWines">0</div>
-                <div class="stat-label">Total Wines</div>
+                <div class="stat-label">Total Products</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="filteredCount">0</div>
+                <div class="stat-label">Filtered Results</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number" id="favoriteCount">0</div>
@@ -304,23 +476,29 @@
     </div>
 
     <div id="wineContainer" class="wine-grid"></div>
+    
+    <div class="pagination" id="pagination"></div>
 </div>
 
 <script>
     let allWines = [];
+    let filteredWines = [];
     let favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
     let currentFilter = 'all';
+    let currentPage = 1;
+    const itemsPerPage = 50;
 
     // Load wines from localStorage on page load
     window.addEventListener('DOMContentLoaded', () => {
         loadWinesFromStorage();
+        updateTypeCheckboxes();
     });
 
     function loadWinesFromStorage() {
         const stored = localStorage.getItem('wines');
         if (stored) {
             allWines = JSON.parse(stored);
-            displayWines();
+            applyFilters();
             updateStats();
         }
     }
@@ -328,6 +506,191 @@
     function saveWinesToStorage() {
         localStorage.setItem('wines', JSON.stringify(allWines));
     }
+
+    function updateTypeCheckboxes() {
+        document.querySelectorAll('.type-checkbox input[type="checkbox"]').forEach(checkbox => {
+            const label = checkbox.closest('.type-checkbox');
+            if (checkbox.checked) {
+                label.classList.add('checked');
+            } else {
+                label.classList.remove('checked');
+            }
+        });
+    }
+
+    function getSelectedTypes() {
+        const checkboxes = document.querySelectorAll('.type-checkbox input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function applyFilters() {
+        updateTypeCheckboxes();
+        
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const selectedTypes = getSelectedTypes();
+
+        filteredWines = allWines.filter(wine => {
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                wine.productShortName.toLowerCase().includes(searchTerm) ||
+                wine.productId.toString().includes(searchTerm) ||
+                (wine.vintage && wine.vintage.toString().includes(searchTerm));
+
+            // Type filter
+            const matchesType = selectedTypes.length === 0 || 
+                selectedTypes.some(type => wine.productType && wine.productType.includes(type));
+
+            // Favorites filter
+            const matchesFavorites = currentFilter === 'all' || 
+                (currentFilter === 'favorites' && favorites.has(wine.productId));
+
+            return matchesSearch && matchesType && matchesFavorites;
+        });
+
+        currentPage = 1;
+        displayWines();
+        updateStats();
+    }
+
+    function displayWines() {
+        const container = document.getElementById('wineContainer');
+        
+        if (filteredWines.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h2>No products found</h2>
+                    <p>${allWines.length === 0 ? 'Click "Update from API" to load products' : 'Try adjusting your filters or search'}</p>
+                </div>
+            `;
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+
+        // Pagination
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageWines = filteredWines.slice(startIndex, endIndex);
+
+        container.innerHTML = pageWines.map(wine => {
+            const imageUrl = wine.images && wine.images.length > 0 
+                ? wine.images[0].url 
+                : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="0 0 80 120"%3E%3Crect fill="%23f0f0f0" width="80" height="120"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E';
+            
+            const stockStatus = wine.buyable ? 'available' : (wine.productAvailability === 'availableForOrder' ? 'order' : 'unavailable');
+            const stockText = wine.buyable ? 'In Stock' : (wine.productAvailability === 'availableForOrder' ? 'Order Only' : 'Unavailable');
+
+            return `
+                <div class="wine-card ${favorites.has(wine.productId) ? 'favorite' : ''}">
+                    <img src="${imageUrl}" alt="${wine.productShortName}" class="wine-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'80\\' height=\\'120\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'80\\' height=\\'120\\'/%3E%3C/svg%3E'">
+                    <div class="wine-info">
+                        <div class="wine-name">${wine.productShortName}</div>
+                        <div class="wine-details">ID: ${wine.productId}</div>
+                        ${wine.productType ? `<div class="wine-details">${wine.productType}</div>` : ''}
+                        ${wine.volume ? `<div class="wine-details">Volume: ${wine.volume}L</div>` : ''}
+                        ${wine.vintage ? `<div class="wine-details">Vintage: ${wine.vintage}</div>` : ''}
+                        ${wine.price ? `<div class="wine-price">${wine.price} kr</div>` : ''}
+                        <span class="wine-stock stock-${stockStatus}">${stockText}</span>
+                    </div>
+                    <button class="favorite-btn" onclick="toggleFavorite(${wine.productId}, event)">
+                        ${favorites.has(wine.productId) ? '⭐' : '☆'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(filteredWines.length / itemsPerPage);
+        const paginationContainer = document.getElementById('pagination');
+
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let paginationHTML = `
+            <button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>
+        `;
+
+        // Show first page
+        if (currentPage > 3) {
+            paginationHTML += `<button class="page-btn" onclick="changePage(1)">1</button>`;
+            if (currentPage > 4) {
+                paginationHTML += `<span class="page-info">...</span>`;
+            }
+        }
+
+        // Show pages around current
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+            paginationHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+        }
+
+        // Show last page
+        if (currentPage < totalPages - 2) {
+            if (currentPage < totalPages - 3) {
+                paginationHTML += `<span class="page-info">...</span>`;
+            }
+            paginationHTML += `<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
+        }
+
+        paginationHTML += `
+            <button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>
+            <span class="page-info">Page ${currentPage} of ${totalPages}</span>
+        `;
+
+        paginationContainer.innerHTML = paginationHTML;
+    }
+
+    function changePage(page) {
+        const totalPages = Math.ceil(filteredWines.length / itemsPerPage);
+        if (page < 1 || page > totalPages) return;
+        
+        currentPage = page;
+        displayWines();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleFavorite(productId, event) {
+        event.stopPropagation();
+        
+        if (favorites.has(productId)) {
+            favorites.delete(productId);
+        } else {
+            favorites.add(productId);
+        }
+
+        localStorage.setItem('favorites', JSON.stringify([...favorites]));
+        displayWines();
+        updateStats();
+    }
+
+    function filterWines(filter) {
+        currentFilter = filter;
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        applyFilters();
+    }
+
+    function updateStats() {
+        document.getElementById('totalWines').textContent = allWines.length.toLocaleString();
+        document.getElementById('filteredCount').textContent = filteredWines.length.toLocaleString();
+        document.getElementById('favoriteCount').textContent = favorites.size;
+    }
+
+    // Search functionality with debouncing
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            applyFilters();
+        }, 300);
+    });
 
     async function updateFromAPI() {
         const btn = event.target;
@@ -343,7 +706,7 @@
         const BASE_URL = 'https://apis.vinmonopolet.no/products/v0/details-normal';
         
         let start = 0;
-        const maxResults = 1000; // Fetch 1000 products per request
+        const maxResults = 1000;
         let hasMore = true;
 
         try {
@@ -367,32 +730,31 @@
                 const data = await response.json();
                 console.log(`Fetched batch starting at ${start}:`, data);
                 
-                // Check if we got products
                 if (data && Array.isArray(data) && data.length > 0) {
-                    // Process products from Vinmonopolet
                     const processedProducts = data.map(product => ({
                         productId: product.productId || product.id,
                         productShortName: product.productShortName || product.name || 'Unknown Product',
                         price: product.price,
                         volume: product.volume,
-                        productType: product.mainProductType || product.productType
+                        productType: product.mainProductType || product.productType,
+                        vintage: product.vintage,
+                        images: product.images || [],
+                        buyable: product.buyable,
+                        productAvailability: product.productAvailability
                     }));
                     
                     allWines = [...allWines, ...processedProducts];
                     
-                    // Update progress
-                    const progress = Math.min(95, (allWines.length / 20000) * 100);
+                    const progress = Math.min(95, (allWines.length / 70000) * 100);
                     progressFill.style.width = progress + '%';
                     progressFill.textContent = `${allWines.length} products loaded...`;
                     
                     console.log(`Total products loaded: ${allWines.length}`);
                     
-                    // Check if there are more results
                     if (data.length < maxResults) {
                         hasMore = false;
                     } else {
                         start += maxResults;
-                        // Small delay to avoid rate limiting
                         await new Promise(resolve => setTimeout(resolve, 500));
                     }
                 } else {
@@ -403,7 +765,7 @@
             progressFill.style.width = '100%';
             progressFill.textContent = `Complete! ${allWines.length} products loaded from Vinmonopolet`;
             saveWinesToStorage();
-            displayWines();
+            applyFilters();
             updateStats();
             
             setTimeout(() => {
@@ -427,80 +789,6 @@
             btn.textContent = 'Update from API';
         }
     }
-
-    function displayWines() {
-        const container = document.getElementById('wineContainer');
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-
-        let filteredWines = allWines;
-
-        // Apply search filter
-        if (searchTerm) {
-            filteredWines = filteredWines.filter(wine => 
-                wine.productShortName.toLowerCase().includes(searchTerm) ||
-                wine.productId.toString().includes(searchTerm)
-            );
-        }
-
-        // Apply favorites filter
-        if (currentFilter === 'favorites') {
-            filteredWines = filteredWines.filter(wine => favorites.has(wine.productId));
-        }
-
-        if (filteredWines.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h2>No wines found</h2>
-                    <p>${allWines.length === 0 ? 'Click "Update from API" to load wines' : 'Try a different search or filter'}</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = filteredWines.map(wine => `
-            <div class="wine-card ${favorites.has(wine.productId) ? 'favorite' : ''}">
-                <div class="wine-name">${wine.productShortName}</div>
-                <div class="wine-id">ID: ${wine.productId}</div>
-                <button class="favorite-btn" onclick="toggleFavorite(${wine.productId}, event)">
-                    ${favorites.has(wine.productId) ? '⭐' : '☆'}
-                </button>
-            </div>
-        `).join('');
-    }
-
-    function toggleFavorite(productId, event) {
-        event.stopPropagation();
-        
-        if (favorites.has(productId)) {
-            favorites.delete(productId);
-        } else {
-            favorites.add(productId);
-        }
-
-        localStorage.setItem('favorites', JSON.stringify([...favorites]));
-        displayWines();
-        updateStats();
-    }
-
-    function filterWines(filter) {
-        currentFilter = filter;
-        
-        // Update button states
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.classList.add('active');
-
-        displayWines();
-    }
-
-    function updateStats() {
-        document.getElementById('totalWines').textContent = allWines.length;
-        document.getElementById('favoriteCount').textContent = favorites.size;
-    }
-
-    // Search functionality
-    document.getElementById('searchInput').addEventListener('input', displayWines);
 </script>
 ```
 
