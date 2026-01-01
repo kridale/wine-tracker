@@ -416,6 +416,7 @@
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Search by name, product ID, or vintage...">
             <button class="btn btn-primary" onclick="updateFromAPI()">Update from API</button>
+            <button class="btn btn-secondary" onclick="showProductTypes()">Debug: Show Product Types</button>
         </div>
 
         <div class="filter-section">
@@ -536,9 +537,42 @@
                 wine.productId.toString().includes(searchTerm) ||
                 (wine.vintage && wine.vintage.toString().includes(searchTerm));
 
-            // Type filter
-            const matchesType = selectedTypes.length === 0 || 
-                selectedTypes.some(type => wine.productType && wine.productType.includes(type));
+            // Type filter - if no types selected, show all
+            let matchesType = selectedTypes.length === 0;
+            
+            if (!matchesType && wine.productType) {
+                const productTypeLower = wine.productType.toLowerCase();
+                
+                matchesType = selectedTypes.some(type => {
+                    switch(type) {
+                        case 'Rødvin':
+                            return productTypeLower.includes('rød') || productTypeLower.includes('red');
+                        case 'Hvitvin':
+                            return productTypeLower.includes('hvit') || productTypeLower.includes('white');
+                        case 'Musserende vin':
+                            return productTypeLower.includes('musserende') || 
+                                   productTypeLower.includes('sparkling') || 
+                                   productTypeLower.includes('champagne') ||
+                                   productTypeLower.includes('cava') ||
+                                   productTypeLower.includes('prosecco');
+                        case 'Rosévin':
+                            return productTypeLower.includes('rosé') || productTypeLower.includes('rose');
+                        case 'Brennevin':
+                            return productTypeLower.includes('brennevin') || 
+                                   productTypeLower.includes('spirits') ||
+                                   productTypeLower.includes('akevitt') ||
+                                   productTypeLower.includes('whisky') ||
+                                   productTypeLower.includes('vodka') ||
+                                   productTypeLower.includes('gin') ||
+                                   productTypeLower.includes('rom') ||
+                                   productTypeLower.includes('cognac');
+                        case 'Øl':
+                            return productTypeLower.includes('øl') || productTypeLower.includes('beer');
+                        default:
+                            return productTypeLower.includes(type.toLowerCase());
+                    }
+                });
+            }
 
             // Favorites filter
             const matchesFavorites = currentFilter === 'all' || 
@@ -691,6 +725,27 @@
             applyFilters();
         }, 300);
     });
+
+    function showProductTypes() {
+        const types = [...new Set(allWines.map(p => p.productType))].filter(t => t).sort();
+        const typeCounts = {};
+        allWines.forEach(wine => {
+            if (wine.productType) {
+                typeCounts[wine.productType] = (typeCounts[wine.productType] || 0) + 1;
+            }
+        });
+        
+        console.log('=== PRODUCT TYPES IN YOUR DATA ===');
+        console.log('Unique types:', types);
+        console.log('\nCounts by type:');
+        Object.entries(typeCounts)
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([type, count]) => {
+                console.log(`${type}: ${count} products`);
+            });
+        
+        alert(`Found ${types.length} unique product types. Check the console (F12) for details.`);
+    }
 
     async function updateFromAPI() {
         const btn = event.target;
