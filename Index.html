@@ -339,44 +339,64 @@
         progressContainer.style.display = 'block';
 
         allWines = [];
-        let page = 1;
-        let hasMore = true;
-        const perPage = 100;
 
         try {
-            while (hasMore) {
-                const response = await fetch(`https://api.sampleapis.com/wines/reds?page=${page}&per_page=${perPage}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+            // Try fetching from different wine categories
+            const categories = ['reds', 'whites', 'sparkling', 'rose', 'dessert', 'port'];
+            let totalLoaded = 0;
 
-                const wines = await response.json();
+            for (const category of categories) {
+                progressFill.textContent = `Loading ${category} wines...`;
                 
-                if (wines.length === 0) {
-                    hasMore = false;
-                } else {
-                    // Process wines to ensure they have the correct structure
-                    const processedWines = wines.map(wine => ({
-                        productId: wine.id || wine.productId,
-                        productShortName: wine.wine || wine.productShortName || 'Unknown Wine'
-                    }));
+                try {
+                    const response = await fetch(`https://api.sampleapis.com/wines/${category}`);
                     
-                    allWines = [...allWines, ...processedWines];
+                    if (!response.ok) {
+                        console.warn(`Failed to fetch ${category}: ${response.status}`);
+                        continue;
+                    }
+
+                    const data = await response.json();
+                    console.log(`${category} response:`, data);
                     
-                    // Update progress
-                    const progress = Math.min(100, (allWines.length / 1000) * 100);
-                    progressFill.style.width = progress + '%';
-                    progressFill.textContent = `${allWines.length} wines loaded...`;
-                    
-                    console.log(`Loaded page ${page}: ${wines.length} wines (Total: ${allWines.length})`);
-                    page++;
+                    // Check if data is an array
+                    if (!Array.isArray(data)) {
+                        console.warn(`${category} did not return an array:`, data);
+                        continue;
+                    }
+
+                    if (data.length > 0) {
+                        // Process wines to ensure they have the correct structure
+                        const processedWines = data.map(wine => ({
+                            productId: wine.id || wine.productId || totalLoaded++,
+                            productShortName: wine.wine || wine.productShortName || wine.name || 'Unknown Wine',
+                            category: category
+                        }));
+                        
+                        allWines = [...allWines, ...processedWines];
+                        
+                        // Update progress
+                        const progress = Math.min(100, (allWines.length / 500) * 100);
+                        progressFill.style.width = progress + '%';
+                        progressFill.textContent = `${allWines.length} wines loaded (${category})...`;
+                        
+                        console.log(`Loaded ${category}: ${data.length} wines (Total: ${allWines.length})`);
+                    }
                     
                     // Small delay to avoid rate limiting
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                } catch (categoryError) {
+                    console.error(`Error fetching ${category}:`, categoryError);
+                    continue;
                 }
             }
 
+            if (allWines.length === 0) {
+                throw new Error('No wines were loaded from the API');
+            }
+
+            progressFill.style.width = '100%';
             progressFill.textContent = `Complete! ${allWines.length} wines loaded`;
             saveWinesToStorage();
             displayWines();
@@ -393,6 +413,8 @@
             document.getElementById('wineContainer').innerHTML = `
                 <div class="error">
                     Error loading wines: ${error.message}
+                    <br><br>
+                    <strong>Debug info:</strong> Check the browser console for more details.
                     <br>Please try again later.
                 </div>
             `;
