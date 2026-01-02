@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './App.css';
+import { storage } from './firebase';
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -18,7 +19,7 @@ function App() {
 
   const loadFavorites = async () => {
     try {
-      const result = await window.storage.get('wine-favorites');
+      const result = await storage.get('wine-favorites');
       if (result?.value) {
         setFavorites(JSON.parse(result.value));
       }
@@ -29,7 +30,7 @@ function App() {
 
   const saveFavorites = async (newFavorites) => {
     try {
-      await window.storage.set('wine-favorites', JSON.stringify(newFavorites));
+      await storage.set('wine-favorites', JSON.stringify(newFavorites));
       setFavorites(newFavorites);
     } catch (err) {
       console.error('Failed to save favorites:', err);
@@ -41,7 +42,7 @@ function App() {
     setError(null);
     
     try {
-      const result = await window.storage.get('vinmonopolet-products');
+      const result = await storage.get('vinmonopolet-products');
       
       if (result?.value) {
         const data = JSON.parse(result.value);
@@ -73,7 +74,7 @@ function App() {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      await window.storage.set('vinmonopolet-products', JSON.stringify(allProducts));
+      await storage.set('vinmonopolet-products', JSON.stringify(allProducts));
       setProducts(allProducts);
       
     } catch (err) {
