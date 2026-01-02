@@ -202,10 +202,9 @@ function App() {
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       items = items.filter(p => {
-        const name = p.basic?.productLongName || p.name || '';
-        const producer = p.basic?.manufacturer?.name || '';
-        return name.toLowerCase().includes(search) || 
-               producer.toLowerCase().includes(search);
+        const name = (p.basic?.productShortName ?? p.basic?.productLongName ?? p.name ?? '').toString().toLowerCase();
+        const producer = (p.basic?.manufacturer?.name ?? '').toString().toLowerCase();
+        return name.includes(search) || producer.includes(search);
       });
     }
     
@@ -452,7 +451,7 @@ function App() {
             {paginatedProducts.map((product, index) => {
               const productId = product.basic?.productId || product.code || index;
               const name = product?.basic?.productShortName ?? product?.basic?.productLongName ?? product?.name ?? 'Unknown Wine';
-              const producer = product.basic?.manufacturer?.name || 'Unknown Producer';
+              const producer = product.basic?.manufacturer?.name ?? 'Unknown Producer';
               const price = product.prices?.[0]?.salesPrice || product.price || 'N/A';
               const volume = product.basic?.volume || product.volume || 'N/A';
               const country = product.origins?.origin?.country?.name || product.country || 'N/A';
