@@ -223,21 +223,44 @@ function App() {
     setCurrentPage(1);
   }, [searchTerm, currentView]);
 
-  const showSampleProduct = () => {
-    if (products.length > 0) {
-      const sample = JSON.stringify(products[0], null, 2);
-      // Copy to clipboard
-      navigator.clipboard.writeText(sample).then(() => {
-        addLog('info', 'Sample product data copied to clipboard - paste it to Claude!');
-        // Also show in alert
-        alert('Sample product data copied to clipboard! Paste it to Claude.\n\nFirst 500 characters:\n' + sample.substring(0, 500) + '...');
-      }).catch(() => {
-        // Fallback if clipboard fails
-        alert(sample.substring(0, 1000) + '\n\n...(truncated, check console)');
-        console.log('Full product sample:', sample);
-      });
-    } else {
-      alert('No products loaded yet. Click "Refresh Data" first.');
+  const showSampleProduct = async () => {
+    try {
+      setShowConsole(true);
+      addLog('info', 'Fetching sample products from API (start=0, maxResults=10)...');
+
+      const response = await fetch('/.netlify/functions/vinmonopolet?start=0&maxResults=10');
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`);
+      }
+
+      const batch = await response.json();
+      if (!batch || batch.length === 0) {
+        addLog('info', 'No products returned from API');
+        alert('No products returned from API.');
+        return;
+      }
+
+      const first = batch[0];
+      const sample = JSON.stringify(first, null, 2);
+
+      // Add the complete JSON of the first product to the in-app debug console
+      addLog('debug', sample);
+      addLog('success', 'First product JSON added to debug output');
+
+      // Try to copy to clipboard as well for convenience
+      try {
+        await navigator.clipboard.writeText(sample);
+        addLog('info', 'Sample product data copied to clipboard');
+        alert('Sample product JSON added to debug output and copied to clipboard.');
+      } catch (copyErr) {
+        addLog('warn', 'Could not copy sample to clipboard');
+        alert('Sample product JSON added to debug output. Could not copy to clipboard.');
+        console.log('Full product sample:', first);
+      }
+    } catch (err) {
+      addLog('error', `Failed to fetch sample products: ${err.message}`);
+      alert(`Failed to fetch sample products: ${err.message}`);
+      console.error('Sample fetch error:', err);
     }
   };
 
