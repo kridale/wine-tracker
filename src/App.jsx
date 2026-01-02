@@ -451,7 +451,7 @@ function App() {
           <div className="products">
             {paginatedProducts.map((product, index) => {
               const productId = product.basic?.productId || product.code || index;
-              const name = product.basic?.productLongName || product.name || 'Unknown Wine';
+              const name = product?.basic?.productShortName ?? product?.basic?.productLongName ?? product?.name ?? 'Unknown Wine';
               const producer = product.basic?.manufacturer?.name || 'Unknown Producer';
               const price = product.prices?.[0]?.salesPrice || product.price || 'N/A';
               const volume = product.basic?.volume || product.volume || 'N/A';
