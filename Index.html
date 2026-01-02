@@ -2,1386 +2,598 @@
 
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vinmonopolet Inventory Tracker</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-```
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vinmonopolet Wine Database</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 25%, #16213e 50%, #0f3460 100%);
-        min-height: 100vh;
-        padding: 20px;
-        position: relative;
-        overflow-x: hidden;
+      background: #000000;
+      color: #e7e9ea;
     }
-
-    body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: 
-            radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255, 107, 107, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 40% 20%, rgba(78, 205, 196, 0.15) 0%, transparent 50%);
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    .container {
-        max-width: 1600px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-    }
-
-    header {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        padding: 40px;
-        text-align: center;
-        margin-bottom: 30px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    h1 {
-        font-size: 3em;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 10px;
-        letter-spacing: -1px;
-    }
-
-    .version {
-        display: inline-block;
-        background: rgba(102, 126, 234, 0.2);
-        border: 1px solid rgba(102, 126, 234, 0.4);
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.75em;
-        color: #667eea;
-        font-weight: 600;
-        margin-left: 10px;
-    }
-
-    .subtitle {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 1.1em;
-        font-weight: 500;
-    }
-
-    .controls {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        padding: 30px;
-        margin-bottom: 30px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .search-bar {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 25px;
-        flex-wrap: wrap;
-    }
-
-    input[type="text"] {
-        flex: 1;
-        min-width: 250px;
-        padding: 16px 24px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        font-size: 16px;
-        color: white;
-        transition: all 0.3s;
-        font-weight: 500;
-    }
-
-    input[type="text"]::placeholder {
-        color: rgba(255, 255, 255, 0.4);
-    }
-
-    input[type="text"]:focus {
-        outline: none;
-        border-color: #667eea;
-        background: rgba(255, 255, 255, 0.1);
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
-    }
-
-    .btn {
-        padding: 16px 32px;
-        border: none;
-        border-radius: 16px;
-        font-size: 16px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-    }
-
-    .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.15);
-    }
-
-    .filter-section {
-        margin-bottom: 25px;
-    }
-
-    .filter-section h3 {
-        margin-bottom: 15px;
-        color: white;
-        font-size: 1.2em;
-        font-weight: 700;
-    }
-
-    .filter-buttons {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-    }
-
-    .filter-btn {
-        padding: 12px 24px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        color: white;
-        border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-weight: 600;
-        font-size: 0.95em;
-    }
-
-    .filter-btn:hover, .filter-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-color: transparent;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .type-filters {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .type-checkbox {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 20px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.3s;
-        color: rgba(255, 255, 255, 0.8);
-        font-weight: 600;
-    }
-
-    .type-checkbox:hover {
-        border-color: rgba(102, 126, 234, 0.5);
-        background: rgba(102, 126, 234, 0.1);
-    }
-
-    .type-checkbox.checked {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
-        border-color: #667eea;
-        color: white;
-    }
-
-    .type-checkbox input[type="checkbox"] {
-        cursor: pointer;
-        width: 20px;
-        height: 20px;
-        accent-color: #667eea;
-    }
-
-    .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-top: 25px;
-    }
-
-    .stat-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        padding: 24px;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.3s;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    }
-
-    .stat-number {
-        font-size: 2.5em;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .stat-label {
-        color: rgba(255, 255, 255, 0.6);
-        margin-top: 8px;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85em;
-        letter-spacing: 1px;
-    }
-
-    .wine-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 24px;
-        margin-bottom: 30px;
-        min-height: 400px;
-    }
-
     .wine-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 24px;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
+      background: #16181c;
+      border: 1px solid #2f3336;
+      transition: all 0.2s;
     }
-
-    .wine-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-
-    .wine-card:hover::before {
-        opacity: 1;
-    }
-
     .wine-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
-        border-color: rgba(102, 126, 234, 0.5);
+      background: #1c1f23;
+      border-color: #1d9bf0;
     }
-
-    .wine-card.favorite {
-        border-color: #ffd700;
-        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+    .search-bar {
+      background: #16181c;
+      border: 1px solid #2f3336;
+      color: #e7e9ea;
     }
-
-    .wine-card-inner {
-        display: flex;
-        gap: 20px;
-        position: relative;
-        z-index: 1;
+    .search-bar:focus {
+      border-color: #1d9bf0;
+      outline: none;
     }
-
-    .wine-image {
-        width: 90px;
-        height: 135px;
-        object-fit: contain;
-        flex-shrink: 0;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 12px;
-        padding: 8px;
+    .btn-primary {
+      background: #1d9bf0;
+      color: white;
+      transition: all 0.2s;
     }
-
-    .wine-info {
-        flex: 1;
+    .btn-primary:hover {
+      background: #1a8cd8;
     }
-
-    .wine-name {
-        font-size: 1.15em;
-        font-weight: 700;
-        margin-bottom: 10px;
-        color: white;
-        line-height: 1.3;
+    .btn-secondary {
+      background: #16181c;
+      border: 1px solid #2f3336;
+      color: #e7e9ea;
     }
-
-    .wine-details {
-        font-size: 0.9em;
-        color: rgba(255, 255, 255, 0.6);
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+    .btn-secondary:hover {
+      background: #1c1f23;
     }
-
-    .wine-price {
-        font-size: 1.3em;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-top: 12px;
+    .stat-card {
+      background: #16181c;
+      border: 1px solid #2f3336;
     }
-
-    .wine-stock {
-        display: inline-block;
-        padding: 6px 14px;
-        border-radius: 10px;
-        font-size: 0.8em;
-        font-weight: 700;
-        margin-top: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    .badge-green {
+      background: #00ba7c;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
     }
-
-    .stock-available {
-        background: rgba(78, 205, 196, 0.2);
-        color: #4ecdc4;
-        border: 1px solid rgba(78, 205, 196, 0.4);
+    .badge-red {
+      background: #f4212e;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
     }
-
-    .stock-order {
-        background: rgba(255, 183, 77, 0.2);
-        color: #ffb74d;
-        border: 1px solid rgba(255, 183, 77, 0.4);
+    .badge-blue {
+      background: #1d9bf0;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
     }
-
-    .stock-unavailable {
-        background: rgba(255, 107, 107, 0.2);
-        color: #ff6b6b;
-        border: 1px solid rgba(255, 107, 107, 0.4);
-    }
-
-    .favorite-btn {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        cursor: pointer;
-        transition: all 0.3s;
-        z-index: 2;
-    }
-
-    .favorite-btn:hover {
-        transform: scale(1.1);
-        background: rgba(255, 215, 0, 0.2);
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        padding: 30px;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        margin-bottom: 30px;
-    }
-
-    .page-btn {
-        padding: 12px 20px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        color: white;
-        border-radius: 12px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s;
-        min-width: 44px;
-    }
-
-    .page-btn:hover:not(:disabled) {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-color: transparent;
-        transform: translateY(-2px);
-    }
-
-    .page-btn:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-    }
-
-    .page-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-color: transparent;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .page-info {
-        color: rgba(255, 255, 255, 0.6);
-        font-weight: 600;
-        padding: 0 12px;
-    }
-
-    .progress-bar {
-        width: 100%;
-        height: 40px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 20px;
-        overflow: hidden;
-        margin-top: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        transition: width 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .error {
-        background: rgba(255, 107, 107, 0.2);
-        border: 1px solid rgba(255, 107, 107, 0.4);
-        color: #ff6b6b;
-        padding: 20px;
-        border-radius: 16px;
-        margin: 20px;
-        backdrop-filter: blur(10px);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 80px 30px;
-        color: rgba(255, 255, 255, 0.6);
-    }
-
-    .empty-state h2 {
-        font-size: 2em;
-        margin-bottom: 10px;
-        color: white;
-    }
-
-    .loading {
-        text-align: center;
-        padding: 60px;
-        font-size: 1.5em;
-        color: white;
-    }
-
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(10px);
-        animation: fadeIn 0.3s;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    .modal-content {
-        background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(15, 52, 96, 0.95) 100%);
-        backdrop-filter: blur(30px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        margin: 5% auto;
-        padding: 0;
-        width: 90%;
-        max-width: 800px;
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        max-height: 85vh;
-        overflow-y: auto;
-    }
-
-    @keyframes slideIn {
-        from {
-            transform: translateY(-50px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .modal-header {
-        padding: 32px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        align-items: flex-start;
-        gap: 24px;
-    }
-
-    .modal-image {
-        width: 120px;
-        height: 180px;
-        object-fit: contain;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-        padding: 12px;
-    }
-
-    .modal-title-section {
-        flex: 1;
-    }
-
-    .modal-title {
-        font-size: 2em;
-        font-weight: 800;
-        color: white;
-        margin-bottom: 12px;
-        line-height: 1.2;
-    }
-
-    .modal-meta {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-    }
-
-    .modal-badge {
-        padding: 8px 16px;
-        border-radius: 12px;
-        font-size: 0.85em;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .close {
-        position: absolute;
-        top: 24px;
-        right: 24px;
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 36px;
-        font-weight: 300;
-        cursor: pointer;
-        transition: all 0.3s;
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .close:hover {
-        color: white;
-        background: rgba(255, 255, 255, 0.1);
-        transform: rotate(90deg);
-    }
-
-    .modal-body {
-        padding: 32px;
-    }
-
-    .modal-section {
-        margin-bottom: 28px;
-    }
-
-    .modal-section h3 {
-        font-size: 1.3em;
-        font-weight: 700;
-        color: white;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .modal-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-    }
-
-    .modal-detail {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 16px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .modal-detail-label {
-        font-size: 0.85em;
-        color: rgba(255, 255, 255, 0.5);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
-
-    .modal-detail-value {
-        font-size: 1.1em;
-        color: white;
-        font-weight: 600;
-    }
-
-    .modal-price-section {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-        border: 1px solid rgba(102, 126, 234, 0.4);
-        padding: 24px;
-        border-radius: 16px;
-        text-align: center;
-        margin-bottom: 28px;
-    }
-
-    .modal-price-large {
-        font-size: 3em;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .modal-price-per-liter {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 1.1em;
-        margin-top: 8px;
-    }
-
-    @media (max-width: 768px) {
-        h1 {
-            font-size: 2em;
-        }
-
-        .wine-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .modal-content {
-            width: 95%;
-            margin: 2% auto;
-        }
-
-        .modal-header {
-            flex-direction: column;
-        }
-
-        .modal-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-```
-
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🍷 Vinmonopolet Inventory<span class="version">v2.0</span></h1>
-            <p class="subtitle" id="subtitleText">Complete product catalogue</p>
-        </header>
+  <div id="root"></div>
 
-```
-    <div class="controls">
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Search by name, product ID, or vintage...">
-            <button class="btn btn-primary" onclick="updateFromAPI()">Update from API</button>
-            <button class="btn btn-secondary" onclick="showProductTypes()">Debug</button>
-        </div>
+  <script type="module">
+    import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18';
+    import ReactDOM from 'https://esm.sh/react-dom@18/client';
+    import { RefreshCw, Search, Star, Database, TrendingUp, Filter, X } from 'https://esm.sh/lucide-react@0.263.1';
 
-        <div class="filter-section">
-            <h3>Product Types</h3>
-            <div class="type-filters" id="typeFilters">
-                <label class="type-checkbox">
-                    <input type="checkbox" value="Rødvin" checked onchange="applyFilters()">
-                    <span>🍷 Red Wine</span>
-                </label>
-                <label class="type-checkbox">
-                    <input type="checkbox" value="Hvitvin" checked onchange="applyFilters()">
-                    <span>🥂 White Wine</span>
-                </label>
-                <label class="type-checkbox">
-                    <input type="checkbox" value="Musserende vin" checked onchange="applyFilters()">
-                    <span>🍾 Sparkling Wine</span>
-                </label>
-                <label class="type-checkbox">
-                    <input type="checkbox" value="Rosévin" onchange="applyFilters()">
-                    <span>🌸 Rosé</span>
-                </label>
-                <label class="type-checkbox">
-                    <input type="checkbox" value="Brennevin" onchange="applyFilters()">
-                    <span>🥃 Spirits</span>
-                </label>
-                <label class="type-checkbox">
-                    <input type="checkbox" value="Øl" onchange="applyFilters()">
-                    <span>🍺 Beer</span>
-                </label>
-            </div>
-        </div>
+    const VinmonopoletDB = () => {
+      const [wines, setWines] = useState([]);
+      const [favorites, setFavorites] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [lastUpdate, setLastUpdate] = useState(null);
+      const [activeTab, setActiveTab] = useState('browse');
+      const [currentPage, setCurrentPage] = useState(1);
+      const [showFilters, setShowFilters] = useState(false);
+      
+      // Filters
+      const [filters, setFilters] = useState({
+        category: 'all',
+        country: 'all',
+        priceMin: '',
+        priceMax: '',
+        inStock: false
+      });
 
-        <div class="filter-buttons">
-            <button class="filter-btn active" onclick="filterWines('all')">All Products</button>
-            <button class="filter-btn" onclick="filterWines('favorites')">⭐ Favorites</button>
-        </div>
+      const ITEMS_PER_PAGE = 50;
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="totalWines">0</div>
-                <div class="stat-label">Total Products</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="filteredCount">0</div>
-                <div class="stat-label">Filtered Results</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="favoriteCount">0</div>
-                <div class="stat-label">Favorites</div>
-            </div>
-        </div>
+      // Load data on mount
+      useEffect(() => {
+        loadLocalData();
+      }, []);
 
-        <div id="progressContainer" style="display: none;">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill">0%</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="wineContainer" class="wine-grid"></div>
-    
-    <div class="pagination" id="pagination"></div>
-</div>
-
-<!-- Product Detail Modal -->
-<div id="productModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <div class="modal-header">
-            <img id="modalImage" class="modal-image" src="" alt="">
-            <div class="modal-title-section">
-                <h2 class="modal-title" id="modalTitle"></h2>
-                <div class="modal-meta" id="modalMeta"></div>
-            </div>
-        </div>
-        <div class="modal-body">
-            <div class="modal-price-section" id="modalPriceSection"></div>
-            <div class="modal-section" id="modalDetailsSection"></div>
-            <div class="modal-section" id="modalOriginSection"></div>
-            <div class="modal-section" id="modalCharacteristics"></div>
-        </div>
-    </div>
-</div>
-
-<script>
-    let allWines = [];
-    let filteredWines = [];
-    let favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
-    let currentFilter = 'all';
-    let currentPage = 1;
-    const itemsPerPage = 50;
-
-    window.addEventListener('DOMContentLoaded', () => {
-        loadWinesFromStorage();
-        updateTypeCheckboxes();
-    });
-
-    function loadWinesFromStorage() {
-        const stored = localStorage.getItem('wines');
-        if (stored) {
-            allWines = JSON.parse(stored);
-            document.getElementById('subtitleText').textContent = `${allWines.length.toLocaleString()} products loaded from storage`;
-            applyFilters();
-            updateStats();
-        }
-    }
-
-    function saveWinesToStorage() {
-        localStorage.setItem('wines', JSON.stringify(allWines));
-    }
-
-    function updateTypeCheckboxes() {
-        document.querySelectorAll('.type-checkbox input[type="checkbox"]').forEach(checkbox => {
-            const label = checkbox.closest('.type-checkbox');
-            if (checkbox.checked) {
-                label.classList.add('checked');
-            } else {
-                label.classList.remove('checked');
-            }
-        });
-    }
-
-    function getSelectedTypes() {
-        const checkboxes = document.querySelectorAll('.type-checkbox input[type="checkbox"]:checked');
-        return Array.from(checkboxes).map(cb => cb.value);
-    }
-
-    function applyFilters() {
-        updateTypeCheckboxes();
-        
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const selectedTypes = getSelectedTypes();
-
-        filteredWines = allWines.filter(wine => {
-            const matchesSearch = !searchTerm || 
-                wine.productShortName.toLowerCase().includes(searchTerm) ||
-                wine.productId.toString().includes(searchTerm) ||
-                (wine.vintage && wine.vintage.toString().includes(searchTerm));
-
-            let matchesType = selectedTypes.length === 0;
-            
-            if (!matchesType) {
-                const productTypeLower = (wine.productType || '').toLowerCase();
-                const mainCategoryLower = (wine.mainCategory || '').toLowerCase();
-                const subCategoryLower = (wine.subCategory || '').toLowerCase();
-                const combinedTypes = `${productTypeLower} ${mainCategoryLower} ${subCategoryLower}`;
-                
-                matchesType = selectedTypes.some(type => {
-                    switch(type) {
-                        case 'Rødvin':
-                            return combinedTypes.includes('rød') || combinedTypes.includes('red');
-                        case 'Hvitvin':
-                            return combinedTypes.includes('hvit') || combinedTypes.includes('white');
-                        case 'Musserende vin':
-                            return combinedTypes.includes('musserende') || 
-                                   combinedTypes.includes('sparkling') || 
-                                   combinedTypes.includes('champagne') ||
-                                   combinedTypes.includes('cava') ||
-                                   combinedTypes.includes('prosecco');
-                        case 'Rosévin':
-                            return combinedTypes.includes('rosé') || combinedTypes.includes('rose');
-                        case 'Brennevin':
-                            return combinedTypes.includes('brennevin') || 
-                                   combinedTypes.includes('spirits') ||
-                                   combinedTypes.includes('akevitt') ||
-                                   combinedTypes.includes('whisky') ||
-                                   combinedTypes.includes('vodka') ||
-                                   combinedTypes.includes('gin') ||
-                                   combinedTypes.includes('rom') ||
-                                   combinedTypes.includes('cognac') ||
-                                   combinedTypes.includes('likør');
-                        case 'Øl':
-                            return combinedTypes.includes('øl') || combinedTypes.includes('beer') || combinedTypes.includes('ale');
-                        default:
-                            return combinedTypes.includes(type.toLowerCase());
-                    }
-                });
-            }
-
-            const matchesFavorites = currentFilter === 'all' || 
-                (currentFilter === 'favorites' && favorites.has(wine.productId));
-
-            return matchesSearch && matchesType && matchesFavorites;
-        });
-
-        currentPage = 1;
-        displayWines();
-        updateStats();
-    }
-
-    function displayWines() {
-        const container = document.getElementById('wineContainer');
-        
-        if (filteredWines.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h2>No products found</h2>
-                    <p>${allWines.length === 0 ? 'Click "Update from API" to load products' : 'Try adjusting your filters or search'}</p>
-                </div>
-            `;
-            document.getElementById('pagination').innerHTML = '';
-            return;
-        }
-
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const pageWines = filteredWines.slice(startIndex, endIndex);
-
-        container.innerHTML = pageWines.map(wine => {
-            const imageUrl = wine.images && wine.images.length > 0 
-                ? wine.images[0].url 
-                : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="0 0 80 120"%3E%3Crect fill="%23f0f0f0" width="80" height="120"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E';
-            
-            const stockStatus = wine.buyable ? 'available' : (wine.productAvailability === 'availableForOrder' ? 'order' : 'unavailable');
-            const stockText = wine.buyable ? 'In Stock' : (wine.productAvailability === 'availableForOrder' ? 'Order Only' : 'Unavailable');
-
-            return `
-                <div class="wine-card ${favorites.has(wine.productId) ? 'favorite' : ''}" onclick="showProductDetails(${wine.productId})">
-                    <button class="favorite-btn" onclick="toggleFavorite(${wine.productId}, event)">
-                        ${favorites.has(wine.productId) ? '⭐' : '☆'}
-                    </button>
-                    <div class="wine-card-inner">
-                        <img src="${imageUrl}" alt="${wine.productShortName}" class="wine-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'80\\' height=\\'120\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'80\\' height=\\'120\\'/%3E%3C/svg%3E'">
-                        <div class="wine-info">
-                            <div class="wine-name">${wine.productShortName}</div>
-                            ${wine.country ? `<div class="wine-details">🌍 ${wine.country}</div>` : ''}
-                            ${wine.vintage ? `<div class="wine-details">📅 ${wine.vintage}</div>` : ''}
-                            ${wine.alcoholContent ? `<div class="wine-details">🍷 ${wine.alcoholContent}%</div>` : ''}
-                            ${wine.volume ? `<div class="wine-details">📏 ${wine.volume}L</div>` : ''}
-                            ${wine.price ? `<div class="wine-price">${wine.price} kr</div>` : ''}
-                            <span class="wine-stock stock-${stockStatus}">${stockText}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        renderPagination();
-    }
-
-    function showProductDetails(productId) {
-        const wine = allWines.find(w => w.productId === productId);
-        if (!wine) return;
-
-        const modal = document.getElementById('productModal');
-        const imageUrl = wine.images && wine.images.length > 0 ? wine.images[0].url : '';
-        
-        document.getElementById('modalImage').src = imageUrl;
-        document.getElementById('modalTitle').textContent = wine.productShortName;
-
-        // Meta badges
-        const metaHTML = [];
-        if (wine.productSelection) metaHTML.push(`<span class="modal-badge" style="background: rgba(78, 205, 196, 0.2); color: #4ecdc4; border: 1px solid rgba(78, 205, 196, 0.4);">${wine.productSelection}</span>`);
-        if (wine.mainCategory) metaHTML.push(`<span class="modal-badge" style="background: rgba(102, 126, 234, 0.2); color: #667eea; border: 1px solid rgba(102, 126, 234, 0.4);">${wine.mainCategory}</span>`);
-        document.getElementById('modalMeta').innerHTML = metaHTML.join('');
-
-        // Price section
-        const priceHTML = wine.price ? `
-            <div class="modal-price-large">${wine.price} kr</div>
-            ${wine.pricePerLiter ? `<div class="modal-price-per-liter">${wine.pricePerLiter} kr per liter</div>` : ''}
-        ` : '<div class="modal-price-large">Price not available</div>';
-        document.getElementById('modalPriceSection').innerHTML = priceHTML;
-
-        // Product details
-        const details = [];
-        if (wine.productId) details.push({label: 'Product ID', value: wine.productId});
-        if (wine.vintage) details.push({label: 'Vintage', value: wine.vintage});
-        if (wine.alcoholContent) details.push({label: 'Alcohol', value: wine.alcoholContent + '%'});
-        if (wine.volume) details.push({label: 'Volume', value: wine.volume + 'L'});
-        if (wine.sugar) details.push({label: 'Sugar', value: wine.sugar + ' g/L'});
-        if (wine.acid) details.push({label: 'Acid', value: wine.acid + ' g/L'});
-
-        const detailsHTML = details.length ? `
-            <h3>📋 Product Details</h3>
-            <div class="modal-grid">
-                ${details.map(d => `
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">${d.label}</div>
-                        <div class="modal-detail-value">${d.value}</div>
-                    </div>
-                `).join('')}
-            </div>
-        ` : '';
-        document.getElementById('modalDetailsSection').innerHTML = detailsHTML;
-
-        // Origin
-        const origin = [];
-        if (wine.country) origin.push({label: 'Country', value: wine.country});
-        if (wine.district) origin.push({label: 'District', value: wine.district});
-        if (wine.subDistrict) origin.push({label: 'Sub-District', value: wine.subDistrict});
-        if (wine.producerName) origin.push({label: 'Producer', value: wine.producerName});
-
-        const originHTML = origin.length ? `
-            <h3>🌍 Origin & Producer</h3>
-            <div class="modal-grid">
-                ${origin.map(o => `
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">${o.label}</div>
-                        <div class="modal-detail-value">${o.value}</div>
-                    </div>
-                `).join('')}
-            </div>
-        ` : '';
-        document.getElementById('modalOriginSection').innerHTML = originHTML;
-
-        // Characteristics
-        const characteristics = [];
-        if (wine.taste) characteristics.push({label: 'Taste', value: wine.taste});
-        if (wine.color) characteristics.push({label: 'Color', value: wine.color});
-        if (wine.odor) characteristics.push({label: 'Odor', value: wine.odor});
-        if (wine.method) characteristics.push({label: 'Method', value: wine.method});
-        if (wine.rawMaterial) characteristics.push({label: 'Raw Material', value: wine.rawMaterial});
-
-        const charHTML = characteristics.length ? `
-            <h3>✨ Characteristics</h3>
-            <div class="modal-grid">
-                ${characteristics.map(c => `
-                    <div class="modal-detail">
-                        <div class="modal-detail-label">${c.label}</div>
-                        <div class="modal-detail-value">${c.value}</div>
-                    </div>
-                `).join('')}
-            </div>
-        ` : '';
-        document.getElementById('modalCharacteristics').innerHTML = charHTML;
-
-        modal.style.display = 'block';
-    }
-
-    function closeModal() {
-        document.getElementById('productModal').style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        const modal = document.getElementById('productModal');
-        if (event.target == modal) {
-            closeModal();
-        }
-    }
-
-    function renderPagination() {
-        const totalPages = Math.ceil(filteredWines.length / itemsPerPage);
-        const paginationContainer = document.getElementById('pagination');
-
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
-        let paginationHTML = `
-            <button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>
-        `;
-
-        if (currentPage > 3) {
-            paginationHTML += `<button class="page-btn" onclick="changePage(1)">1</button>`;
-            if (currentPage > 4) {
-                paginationHTML += `<span class="page-info">...</span>`;
-            }
-        }
-
-        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-            paginationHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-        }
-
-        if (currentPage < totalPages - 2) {
-            if (currentPage < totalPages - 3) {
-                paginationHTML += `<span class="page-info">...</span>`;
-            }
-            paginationHTML += `<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
-        }
-
-        paginationHTML += `
-            <button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>
-            <span class="page-info">Page ${currentPage} of ${totalPages}</span>
-        `;
-
-        paginationContainer.innerHTML = paginationHTML;
-    }
-
-    function changePage(page) {
-        const totalPages = Math.ceil(filteredWines.length / itemsPerPage);
-        if (page < 1 || page > totalPages) return;
-        
-        currentPage = page;
-        displayWines();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function toggleFavorite(productId, event) {
-        event.stopPropagation();
-        
-        if (favorites.has(productId)) {
-            favorites.delete(productId);
-        } else {
-            favorites.add(productId);
-        }
-
-        localStorage.setItem('favorites', JSON.stringify([...favorites]));
-        displayWines();
-        updateStats();
-    }
-
-    function filterWines(filter) {
-        currentFilter = filter;
-        
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.classList.add('active');
-
-        applyFilters();
-    }
-
-    function updateStats() {
-        document.getElementById('totalWines').textContent = allWines.length.toLocaleString();
-        document.getElementById('filteredCount').textContent = filteredWines.length.toLocaleString();
-        document.getElementById('favoriteCount').textContent = favorites.size;
-    }
-
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', () => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            applyFilters();
-        }, 300);
-    });
-
-    function showProductTypes() {
-        const mainCategories = [...new Set(allWines.map(p => p.mainCategory))].filter(t => t).sort();
-        const subCategories = [...new Set(allWines.map(p => p.subCategory))].filter(t => t).sort();
-        
-        const mainCounts = {};
-        const subCounts = {};
-        
-        allWines.forEach(wine => {
-            if (wine.mainCategory) {
-                mainCounts[wine.mainCategory] = (mainCounts[wine.mainCategory] || 0) + 1;
-            }
-            if (wine.subCategory) {
-                subCounts[wine.subCategory] = (subCounts[wine.subCategory] || 0) + 1;
-            }
-        });
-        
-        console.log('=== PRODUCT CATEGORIES IN YOUR DATA ===');
-        console.log('\n--- MAIN CATEGORIES ---');
-        console.log('Unique main categories:', mainCategories);
-        Object.entries(mainCounts)
-            .sort((a, b) => b[1] - a[1])
-            .forEach(([cat, count]) => {
-                console.log(`${cat}: ${count} products`);
-            });
-        
-        console.log('\n--- SUB CATEGORIES (Top 20) ---');
-        Object.entries(subCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 20)
-            .forEach(([cat, count]) => {
-                console.log(`${cat}: ${count} products`);
-            });
-        
-        alert(`Found ${mainCategories.length} main categories, ${subCategories.length} sub categories. Check the console (F12) for details.`);
-    }
-
-    async function updateFromAPI() {
-        const btn = event.target;
-        btn.disabled = true;
-        btn.textContent = 'Updating...';
-        
-        const progressContainer = document.getElementById('progressContainer');
-        const progressFill = document.getElementById('progressFill');
-        progressContainer.style.display = 'block';
-
-        // OPTIMIZED: Maximum products per call to minimize API calls
-        // Vinmonopolet API has ~6MB response limit
-        // Each product is roughly 1-2KB, so 5000 products ≈ 5-10MB (staying safe)
-        const maxResults = 5000; // Increased from 1000 to reduce total calls
-        const delayBetweenCalls = 200; // Slightly longer delay for larger responses
-        const totalExpectedCalls = Math.ceil(70000 / maxResults);
-        const estimatedMinutes = Math.ceil(totalExpectedCalls * 0.5); // ~30 seconds per call with larger payload
-        
-        if (!confirm(`⚠️ Optimized loading: ${maxResults} products per call\n\nThis will make only ~${totalExpectedCalls} API calls (instead of 63) and take approximately ${estimatedMinutes} minutes.\n\nYou already have ${allWines.length.toLocaleString()} products loaded.\n\nDo you want to continue?`)) {
-            progressContainer.style.display = 'none';
-            btn.disabled = false;
-            btn.textContent = 'Update from API';
-            return;
-        }
-
-        allWines = [];
-        const API_KEY = 'c53c9b559f824a80b3a94b9d565ecaaa';
-        const BASE_URL = 'https://apis.vinmonopolet.no/products/v0/details-normal';
-        
-        let start = 0;
-        let hasMore = true;
-        let callCount = 0;
-        const startTime = Date.now();
-
+      const loadLocalData = async () => {
         try {
-            while (hasMore) {
-                callCount++;
-                
-                const elapsed = (Date.now() - startTime) / 1000;
-                const productsPerSecond = allWines.length / elapsed || 0;
-                const remainingProducts = 70000 - allWines.length;
-                const estimatedSecondsLeft = productsPerSecond > 0 ? remainingProducts / productsPerSecond : 60;
-                const minutesLeft = Math.ceil(estimatedSecondsLeft / 60);
-                
-                progressFill.textContent = `Loading... ${allWines.length.toLocaleString()} products | Call ${callCount}/${totalExpectedCalls} | ~${minutesLeft} min left`;
-                
-                const url = `${BASE_URL}?maxResults=${maxResults}&start=${start}`;
-                
-                console.log(`Making API call ${callCount}: requesting ${maxResults} products starting at ${start}`);
-                
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Ocp-Apim-Subscription-Key': API_KEY,
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 429) {
-                        throw new Error('Rate limit exceeded. You may have hit the daily quota (4000 calls/day). Try again tomorrow.');
-                    }
-                    if (response.status === 400) {
-                        // Might be requesting too many products - try with smaller batch
-                        console.warn('400 error - might be requesting too many products. Try reducing maxResults.');
-                        throw new Error('Bad request - the requested batch size might be too large. Try reducing from 5000 to 2000.');
-                    }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const responseSize = JSON.stringify(data).length / (1024 * 1024); // Size in MB
-                console.log(`✅ Batch ${callCount}: fetched ${data.length} products (Response: ${responseSize.toFixed(2)}MB, Total: ${allWines.length + data.length})`);
-                
-                if (data && Array.isArray(data) && data.length > 0) {
-                    const processedProducts = data.map(product => ({
-                        productId: product.productId || product.id,
-                        productShortName: product.productShortName || product.name || 'Unknown Product',
-                        mainCategory: product.mainCategory,
-                        subCategory: product.subCategory,
-                        productType: product.mainProductType || product.productType,
-                        price: product.price,
-                        pricePerLiter: product.pricePerLiter,
-                        volume: product.volume,
-                        vintage: product.vintage,
-                        alcoholContent: product.alcoholContent,
-                        sugar: product.sugar,
-                        acid: product.acid,
-                        country: product.country,
-                        district: product.district,
-                        subDistrict: product.subDistrict,
-                        producerName: product.producerName,
-                        buyable: product.buyable,
-                        productAvailability: product.productAvailability,
-                        productSelection: product.productSelection,
-                        taste: product.taste,
-                        color: product.color,
-                        odor: product.odor,
-                        method: product.method,
-                        rawMaterial: product.rawMaterial,
-                        images: product.images || []
-                    }));
-                    
-                    if (allWines.length === 0 && processedProducts.length > 0) {
-                        console.log('=== SAMPLE PRODUCT STRUCTURE ===');
-                        console.log('First product:', processedProducts[0]);
-                        console.log('Average product size:', (responseSize / data.length * 1024).toFixed(2), 'KB');
-                    }
-                    
-                    allWines = [...allWines, ...processedProducts];
-                    
-                    const progress = Math.min(95, (allWines.length / 70000) * 100);
-                    progressFill.style.width = progress + '%';
-                    
-                    // Auto-save every batch (since we're doing fewer calls)
-                    saveWinesToStorage();
-                    console.log(`Auto-saved ${allWines.length} products`);
-                    
-                    if (data.length < maxResults) {
-                        // Got fewer results than requested, we're done
-                        hasMore = false;
-                        console.log('Received fewer products than requested - completed loading');
-                    } else {
-                        start += maxResults;
-                        // Small delay between calls
-                        await new Promise(resolve => setTimeout(resolve, delayBetweenCalls));
-                    }
-                } else {
-                    hasMore = false;
-                    console.log('No more products to fetch');
-                }
-            }
-
-            progressFill.style.width = '100%';
-            const totalTime = Math.round((Date.now() - startTime) / 1000);
-            const minutes = Math.floor(totalTime / 60);
-            const seconds = totalTime % 60;
-            progressFill.textContent = `✅ Complete! ${allWines.length.toLocaleString()} products loaded in ${minutes}m ${seconds}s using only ${callCount} API calls!`;
-            
-            console.log(`🎉 SUCCESS: Loaded ${allWines.length} products in ${callCount} API calls (${totalTime}s total)`);
-            
-            saveWinesToStorage();
-            document.getElementById('subtitleText').textContent = `${allWines.length.toLocaleString()} products loaded from Vinmonopolet`;
-            applyFilters();
-            updateStats();
-            
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                btn.disabled = false;
-                btn.textContent = 'Update from API';
-            }, 4000);
-
+          const winesData = await window.storage.get('vinm-wines-db');
+          const favsData = await window.storage.get('vinm-favorites');
+          const updateData = await window.storage.get('vinm-last-update');
+          
+          if (winesData?.value) {
+            const winesList = JSON.parse(winesData.value);
+            setWines(winesList);
+          }
+          if (favsData?.value) {
+            setFavorites(JSON.parse(favsData.value));
+          }
+          if (updateData?.value) {
+            setLastUpdate(updateData.value);
+          }
         } catch (error) {
-            console.error('❌ Error fetching products:', error);
+          console.log('No existing data');
+        }
+      };
+
+      const fetchFromAPI = async () => {
+        setLoading(true);
+        try {
+          let allProducts = [];
+          let start = 0;
+          const batchSize = 1000;
+          let hasMore = true;
+          
+          while (hasMore) {
+            const response = await fetch(`/.netlify/functions/fetch-vinmonopolet?maxResults=${batchSize}&start=${start}`);
+            const data = await response.json();
             
-            if (allWines.length > 0) {
-                console.log(`Saving ${allWines.length} products before error...`);
-                saveWinesToStorage();
-                document.getElementById('subtitleText').textContent = `${allWines.length.toLocaleString()} products loaded (interrupted)`;
-                applyFilters();
-                updateStats();
+            if (data.error) {
+              alert(`API Error: ${data.message}`);
+              break;
             }
             
-            document.getElementById('wineContainer').innerHTML = `
-                <div class="error">
-                    ❌ Error: ${error.message}
-                    <br><br>
-                    ${allWines.length > 0 ? `✅ Successfully saved ${allWines.length.toLocaleString()} products before the error.` : ''}
-                    <br><br>
-                    ${error.message.includes('daily quota') ? 'The daily API limit is 4000 calls. Try again tomorrow or use your existing data.' : error.message.includes('too large') ? 'Try updating the code to use maxResults = 2000 instead of 5000.' : 'Please try again later.'}
-                </div>
-            `;
-            progressContainer.style.display = 'none';
-            btn.disabled = false;
-            btn.textContent = 'Update from API';
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              hasMore = data.hasMore;
+              start += batchSize;
+            } else {
+              hasMore = false;
+            }
+            
+            // Limit to prevent excessive data
+            if (allProducts.length >= 100000) {
+              hasMore = false;
+            }
+          }
+          
+          if (allProducts.length > 0) {
+            setWines(allProducts);
+            await window.storage.set('vinm-wines-db', JSON.stringify(allProducts));
+            
+            const now = new Date().toISOString();
+            setLastUpdate(now);
+            await window.storage.set('vinm-last-update', now);
+            
+            alert(`✓ Loaded ${allProducts.length.toLocaleString()} wines`);
+          }
+        } catch (error) {
+          alert('Failed to fetch. Check console.');
+          console.error(error);
+        } finally {
+          setLoading(false);
         }
-    }
-</script>
-```
+      };
+
+      // Filtered wines with memoization for performance
+      const filteredWines = useMemo(() => {
+        let result = wines;
+
+        // Search filter
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          result = result.filter(wine => {
+            const name = wine.productName || wine.name || '';
+            const producer = wine.productSelection || wine.producer || '';
+            const country = wine.country || '';
+            return name.toLowerCase().includes(query) || 
+                   producer.toLowerCase().includes(query) ||
+                   country.toLowerCase().includes(query);
+          });
+        }
+
+        // Category filter
+        if (filters.category !== 'all') {
+          result = result.filter(w => 
+            (w.productType || w.category || '').toLowerCase().includes(filters.category.toLowerCase())
+          );
+        }
+
+        // Country filter
+        if (filters.country !== 'all') {
+          result = result.filter(w => 
+            (w.country || '').toLowerCase() === filters.country.toLowerCase()
+          );
+        }
+
+        // Price filters
+        if (filters.priceMin) {
+          result = result.filter(w => (w.price || 0) >= parseFloat(filters.priceMin));
+        }
+        if (filters.priceMax) {
+          result = result.filter(w => (w.price || 0) <= parseFloat(filters.priceMax));
+        }
+
+        // Stock filter
+        if (filters.inStock) {
+          result = result.filter(w => (w.stock || w.productAvailability) === 'Tilgjengelig');
+        }
+
+        return result;
+      }, [wines, searchQuery, filters]);
+
+      // Paginated wines
+      const paginatedWines = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return filteredWines.slice(start, end);
+      }, [filteredWines, currentPage]);
+
+      const totalPages = Math.ceil(filteredWines.length / ITEMS_PER_PAGE);
+
+      const toggleFavorite = async (wine) => {
+        const wineId = wine.productId || wine.id;
+        const newFavorites = favorites.includes(wineId)
+          ? favorites.filter(id => id !== wineId)
+          : [...favorites, wineId];
+        
+        setFavorites(newFavorites);
+        await window.storage.set('vinm-favorites', JSON.stringify(newFavorites));
+      };
+
+      // Get unique values for filters
+      const uniqueCategories = useMemo(() => 
+        [...new Set(wines.map(w => w.productType || w.category).filter(Boolean))].sort(),
+        [wines]
+      );
+
+      const uniqueCountries = useMemo(() => 
+        [...new Set(wines.map(w => w.country).filter(Boolean))].sort(),
+        [wines]
+      );
+
+      const stats = useMemo(() => ({
+        total: wines.length,
+        favorites: favorites.length,
+        inStock: wines.filter(w => (w.stock || w.productAvailability) === 'Tilgjengelig').length,
+        avgPrice: wines.length > 0 
+          ? (wines.reduce((sum, w) => sum + (w.price || 0), 0) / wines.length).toFixed(0)
+          : 0
+      }), [wines, favorites]);
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <div className="border-b border-gray-800 sticky top-0 z-50" style={{background: '#000000'}}>
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <Database className="w-7 h-7 text-blue-400" />
+                  Vinmonopolet
+                </h1>
+                <button
+                  onClick={fetchFromAPI}
+                  disabled={loading}
+                  className="btn-primary px-4 py-2 rounded-full font-semibold flex items-center gap-2"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  {loading ? 'Loading...' : 'Refresh Data'}
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <Search className="absolute left-4 top-3 w-5 h-5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search wines by name, producer, or country..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="search-bar w-full pl-12 pr-4 py-3 rounded-full text-base"
+                />
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="stat-card p-3 rounded-lg">
+                  <div className="text-gray-400 text-sm">Total Wines</div>
+                  <div className="text-xl font-bold">{stats.total.toLocaleString()}</div>
+                </div>
+                <div className="stat-card p-3 rounded-lg">
+                  <div className="text-gray-400 text-sm">In Stock</div>
+                  <div className="text-xl font-bold text-green-400">{stats.inStock.toLocaleString()}</div>
+                </div>
+                <div className="stat-card p-3 rounded-lg">
+                  <div className="text-gray-400 text-sm">Favorites</div>
+                  <div className="text-xl font-bold text-yellow-400">{stats.favorites}</div>
+                </div>
+                <div className="stat-card p-3 rounded-lg">
+                  <div className="text-gray-400 text-sm">Avg Price</div>
+                  <div className="text-xl font-bold">{stats.avgPrice} kr</div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab('browse')}
+                  className={`px-4 py-2 rounded-full font-semibold ${
+                    activeTab === 'browse' ? 'btn-primary' : 'btn-secondary'
+                  }`}
+                >
+                  Browse ({filteredWines.length.toLocaleString()})
+                </button>
+                <button
+                  onClick={() => setActiveTab('favorites')}
+                  className={`px-4 py-2 rounded-full font-semibold ${
+                    activeTab === 'favorites' ? 'btn-primary' : 'btn-secondary'
+                  }`}
+                >
+                  Favorites ({favorites.length})
+                </button>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="btn-secondary px-4 py-2 rounded-full font-semibold flex items-center gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="border-b border-gray-800" style={{background: '#16181c'}}>
+              <div className="max-w-7xl mx-auto px-4 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-400">Category</label>
+                    <select
+                      value={filters.category}
+                      onChange={(e) => setFilters({...filters, category: e.target.value})}
+                      className="search-bar w-full px-3 py-2 rounded"
+                    >
+                      <option value="all">All Categories</option>
+                      {uniqueCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-400">Country</label>
+                    <select
+                      value={filters.country}
+                      onChange={(e) => setFilters({...filters, country: e.target.value})}
+                      className="search-bar w-full px-3 py-2 rounded"
+                    >
+                      <option value="all">All Countries</option>
+                      {uniqueCountries.map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-400">Min Price</label>
+                    <input
+                      type="number"
+                      value={filters.priceMin}
+                      onChange={(e) => setFilters({...filters, priceMin: e.target.value})}
+                      className="search-bar w-full px-3 py-2 rounded"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-400">Max Price</label>
+                    <input
+                      type="number"
+                      value={filters.priceMax}
+                      onChange={(e) => setFilters({...filters, priceMax: e.target.value})}
+                      className="search-bar w-full px-3 py-2 rounded"
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-400">Stock</label>
+                    <label className="flex items-center gap-2 mt-2">
+                      <input
+                        type="checkbox"
+                        checked={filters.inStock}
+                        onChange={(e) => setFilters({...filters, inStock: e.target.checked})}
+                        className="w-4 h-4"
+                      />
+                      <span>In Stock Only</span>
+                    </label>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setFilters({category: 'all', country: 'all', priceMin: '', priceMax: '', inStock: false})}
+                  className="mt-4 btn-secondary px-4 py-2 rounded-full text-sm"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            {wines.length === 0 ? (
+              <div className="text-center py-12">
+                <Database className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                <p className="text-xl mb-2">No data loaded</p>
+                <p className="text-gray-400 mb-4">Click "Refresh Data" to fetch from Vinmonopolet API</p>
+              </div>
+            ) : activeTab === 'browse' ? (
+              <>
+                {/* Wine Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {paginatedWines.map(wine => {
+                    const wineId = wine.productId || wine.id;
+                    const isFavorite = favorites.includes(wineId);
+                    const inStock = (wine.stock || wine.productAvailability) === 'Tilgjengelig';
+
+                    return (
+                      <div key={wineId} className="wine-card p-4 rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-base leading-tight mb-1">
+                              {wine.productName || wine.name || 'Unknown Wine'}
+                            </h3>
+                            <p className="text-sm text-gray-400">
+                              {wine.productSelection || wine.producer || 'Unknown Producer'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => toggleFavorite(wine)}
+                            className="ml-2"
+                          >
+                            <Star 
+                              className={`w-5 h-5 ${isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-500'}`}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-2xl font-bold">
+                              {wine.price ? `${wine.price.toFixed(2)} kr` : 'N/A'}
+                            </span>
+                            <span className={inStock ? 'badge-green' : 'badge-red'}>
+                              {inStock ? 'In Stock' : 'Out of Stock'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            {wine.country && (
+                              <div>
+                                <span className="text-gray-400">Country:</span>
+                                <span className="ml-1">{wine.country}</span>
+                              </div>
+                            )}
+                            {(wine.productType || wine.category) && (
+                              <div>
+                                <span className="text-gray-400">Type:</span>
+                                <span className="ml-1">{wine.productType || wine.category}</span>
+                              </div>
+                            )}
+                            {wine.volume && (
+                              <div>
+                                <span className="text-gray-400">Volume:</span>
+                                <span className="ml-1">{wine.volume}L</span>
+                              </div>
+                            )}
+                            {wine.alcohol && (
+                              <div>
+                                <span className="text-gray-400">Alcohol:</span>
+                                <span className="ml-1">{wine.alcohol}%</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {wine.vintage && (
+                            <div className="badge-blue inline-block">
+                              Vintage {wine.vintage}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="btn-secondary px-4 py-2 rounded-full disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-gray-400">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="btn-secondary px-4 py-2 rounded-full disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              // Favorites Tab
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {wines.filter(w => favorites.includes(w.productId || w.id)).map(wine => {
+                  const wineId = wine.productId || wine.id;
+                  const inStock = (wine.stock || wine.productAvailability) === 'Tilgjengelig';
+
+                  return (
+                    <div key={wineId} className="wine-card p-4 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-base leading-tight mb-1">
+                            {wine.productName || wine.name || 'Unknown Wine'}
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            {wine.productSelection || wine.producer || 'Unknown Producer'}
+                          </p>
+                        </div>
+                        <button onClick={() => toggleFavorite(wine)}>
+                          <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-2xl font-bold">
+                            {wine.price ? `${wine.price.toFixed(2)} kr` : 'N/A'}
+                          </span>
+                          <span className={inStock ? 'badge-green' : 'badge-red'}>
+                            {inStock ? 'In Stock' : 'Out of Stock'}
+                          </span>
+                        </div>
+
+                        {wine.country && (
+                          <div className="text-sm">
+                            <span className="text-gray-400">Country:</span>
+                            <span className="ml-1">{wine.country}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {favorites.length === 0 && (
+                  <div className="col-span-3 text-center py-12">
+                    <Star className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                    <p className="text-xl mb-2">No favorites yet</p>
+                    <p className="text-gray-400">Click the star icon on wines to add them to favorites</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {lastUpdate && (
+              <div className="text-center mt-8 text-sm text-gray-500">
+                Last updated: {new Date(lastUpdate).toLocaleString()}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<VinmonopoletDB />);
+  </script>
 
 </body>
 </html>
