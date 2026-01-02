@@ -226,61 +226,98 @@ function App() {
   const showSampleProduct = async () => {
     try {
       setShowConsole(true);
-      addLog('info', 'Fetching sample products from API (attempting wine filter)...');
+      addLog('info', 'Fetching sample products from API (attempting wine filter, paging for matches)...');
 
-      // First try a filtered request for wines. If API supports productType=wine or category filters this will help.
-      const filterUrl = '/.netlify/functions/vinmonopolet?start=0&maxResults=50&productType=wine';
-      let response = await fetch(filterUrl);
+      const perPage = 50;
+      const maxPages = 4; // up to 200 items
+      const exclusionKeywords = ['plast', 'pose', 'bag', 'tilbeh', 'tilbehør', 'accessor', 'kork', 'screw', 'cap', 'box'];
 
-      if (!response.ok) {
-        // If filtered request failed (e.g. filter unsupported), fall back to unfiltered request
-        addLog('info', 'Filtered request failed or unsupported, falling back to unfiltered fetch');
-        response = await fetch('/.netlify/functions/vinmonopolet?start=0&maxResults=50');
+      const containsExclusion = (text) => {
+        if (!text) return false;
+        const t = text.toString().toLowerCase();
+        return exclusionKeywords.some(k => t.includes(k));
+      };
+
+      const looksLikeWine = (p) => {
+        const basic = p.basic || {};
+        // positive indicators
+        if (basic.vintage) return true;
+        if ((basic.manufacturer && basic.manufacturer.name) || basic.producer) return true;
+        if (basic.alcoholPercentage || p.alcoholPercentage || p.alcohol) return true;
+        const productType = (basic.productSelection || p.productType || p.category || '').toString().toLowerCase();
+        if (productType.includes('wine') || productType.includes('vin')) return true;
+        const name = (basic.productLongName || p.name || p.productShortName || '').toString();
+        if (/\b(19|20)\d{2}\b/.test(name)) return true; // year in name
+        if (basic.grapes || basic.grape || /\b(chardonnay|merlot|cabernet|pinot|riesling|sangiovese|tempranillo)\b/i.test(name)) return true;
+        return false;
+      };
+
+      let candidates = [];
+
+      // Try one filtered request first
+      try {
+        const filterUrl = `/.netlify/functions/vinmonopolet?start=0&maxResults=${perPage}&productType=wine`;
+        let resp = await fetch(filterUrl);
+        if (resp.ok) {
+          const batch = await resp.json();
+          if (batch && batch.length) candidates.push(...batch);
+        } else {
+          addLog('info', 'Filtered request returned non-OK; will page unfiltered results');
+        }
+      } catch (e) {
+        addLog('info', 'Filtered request failed; will page unfiltered results');
       }
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+      // If filtered didn't yield likely wines, page through unfiltered results up to maxPages
+      if (!candidates.some(looksLikeWine)) {
+        for (let page = 0; page < maxPages; page++) {
+          try {
+            const start = page * perPage;
+            const resp = await fetch(`/.netlify/functions/vinmonopolet?start=${start}&maxResults=${perPage}`);
+            if (!resp.ok) {
+              addLog('warn', `Page fetch failed at page ${page}: ${resp.statusText}`);
+              break;
+            }
+            const batch = await resp.json();
+            if (!batch || batch.length === 0) break;
+            candidates.push(...batch);
+            // if we already have a likely wine in candidates, we can stop early
+            if (candidates.some(looksLikeWine)) break;
+          } catch (err) {
+            addLog('warn', `Page fetch error at page ${page}: ${err.message}`);
+            break;
+          }
+        }
       }
 
-      const batch = await response.json();
-      if (!batch || batch.length === 0) {
+      if (candidates.length === 0) {
         addLog('info', 'No products returned from API');
         alert('No products returned from API.');
         return;
       }
 
-      // Helper to determine if an item looks like a wine
-      const isProbablyWine = (p) => {
-        // Check common wine indicators: vintage, producer/manufacturer, alcohol content, or product type
-        const basic = p.basic || {};
-        if (basic.vintage) return true;
-        if ((basic.manufacturer && basic.manufacturer.name) || basic.producer) return true;
-        if (basic.alcoholPercentage || p.alcoholPercentage || p.prices?.some?.()) return true;
-        const productType = (basic.productSelection || p.productType || '').toString().toLowerCase();
-        if (productType.includes('wine')) return true;
-        // Sometimes names include year like "2018" — simple heuristic
-        const name = (basic.productLongName || p.name || '').toString();
-        if (/\b(19|20)\d{2}\b/.test(name)) return true;
-        return false;
-      };
-
-      // Find the first likely wine
-      let firstWine = batch.find(isProbablyWine);
-      if (!firstWine) {
-        // If none matched, just take the first item
-        firstWine = batch[0];
+      // Prefer an item that looks like wine and doesn't contain exclusion keywords
+      let chosen = candidates.find(p => looksLikeWine(p) && !containsExclusion(p.basic?.productShortName || p.basic?.productLongName || p.name || p.productShortName));
+      if (!chosen) {
+        // Next prefer items that look like wine even if exclusions present
+        chosen = candidates.find(p => looksLikeWine(p));
+      }
+      if (!chosen) {
+        // Next prefer any item without exclusion keywords
+        chosen = candidates.find(p => !containsExclusion(p.basic?.productShortName || p.basic?.productLongName || p.name || p.productShortName));
+      }
+      if (!chosen) {
+        // fallback to first candidate
+        chosen = candidates[0];
         addLog('warn', 'No item matched wine heuristics; showing first returned item');
       } else {
         addLog('success', 'Found a product that looks like a wine');
       }
 
-      const sample = JSON.stringify(firstWine, null, 2);
-
-      // Add the complete JSON of the chosen product to the in-app debug console
+      const sample = JSON.stringify(chosen, null, 2);
       addLog('debug', sample);
       addLog('success', 'Sample product JSON added to debug output');
 
-      // Try to copy to clipboard as well for convenience
       try {
         await navigator.clipboard.writeText(sample);
         addLog('info', 'Sample product data copied to clipboard');
@@ -288,7 +325,7 @@ function App() {
       } catch (copyErr) {
         addLog('warn', 'Could not copy sample to clipboard');
         alert('Sample product JSON added to debug output. Could not copy to clipboard.');
-        console.log('Full product sample:', firstWine);
+        console.log('Full product sample:', chosen);
       }
     } catch (err) {
       addLog('error', `Failed to fetch sample products: ${err.message}`);
