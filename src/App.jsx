@@ -223,6 +223,24 @@ function App() {
     setCurrentPage(1);
   }, [searchTerm, currentView]);
 
+  const showSampleProduct = () => {
+    if (products.length > 0) {
+      const sample = JSON.stringify(products[0], null, 2);
+      // Copy to clipboard
+      navigator.clipboard.writeText(sample).then(() => {
+        addLog('info', 'Sample product data copied to clipboard - paste it to Claude!');
+        // Also show in alert
+        alert('Sample product data copied to clipboard! Paste it to Claude.\n\nFirst 500 characters:\n' + sample.substring(0, 500) + '...');
+      }).catch(() => {
+        // Fallback if clipboard fails
+        alert(sample.substring(0, 1000) + '\n\n...(truncated, check console)');
+        console.log('Full product sample:', sample);
+      });
+    } else {
+      alert('No products loaded yet. Click "Refresh Data" first.');
+    }
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -265,6 +283,13 @@ function App() {
             onClick={() => setShowConsole(!showConsole)}
           >
             {showConsole ? 'Hide Console' : 'Show Console'}
+          </button>
+
+          <button 
+            className="console-toggle"
+            onClick={showSampleProduct}
+          >
+            Debug: Show Sample
           </button>
         </div>
       </header>
