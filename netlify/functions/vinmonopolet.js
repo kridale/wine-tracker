@@ -30,10 +30,14 @@ exports.handler = async (event, context) => {
 
     const data = await response.json();
     
+    // The API might return { products: [...] } or just [...]
+    // Return just the products array
+    const products = Array.isArray(data) ? data : (data.products || data);
+    
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(data)
+      body: JSON.stringify(products)
     };
   } catch (error) {
     console.error('API Error:', error);
