@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import './App.css';
 import { storage } from './firebase';
 
@@ -10,29 +10,62 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentView, setCurrentView] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [logs, setLogs] = useState([]);
+  const [showConsole, setShowConsole] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
+  const logEndRef = useRef(null);
   const itemsPerPage = 50;
 
-  // Load favorites on mount
+  const addLog = (type, message) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, { type, message, timestamp }]);
+  };
+
+  const copyLogs = () => {
+    const logText = logs.map(log => `[${log.timestamp}] [${log.type.toUpperCase()}] ${log.message}`).join('\n');
+    navigator.clipboard.writeText(logText);
+    addLog('info', 'Logs copied to clipboard');
+  };
+
+  const clearLogs = () => {
+    setLogs([]);
+    addLog('info', 'Console cleared');
+  };
+
+  useEffect(() => {
+    if (logEndRef.current && showConsole) {
+      logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, showConsole]);
+
   useEffect(() => {
     loadFavorites();
   }, []);
 
   const loadFavorites = async () => {
     try {
+      addLog('info', 'Loading favorites from Firebase...');
       const result = await storage.get('wine-favorites');
       if (result?.value) {
-        setFavorites(JSON.parse(result.value));
+        const favs = JSON.parse(result.value);
+        setFavorites(favs);
+        addLog('success', `Loaded ${favs.length} favorites`);
+      } else {
+        addLog('info', 'No favorites found');
       }
     } catch (err) {
-      console.log('No saved favorites yet');
+      addLog('error', `Failed to load favorites: ${err.message}`);
     }
   };
 
   const saveFavorites = async (newFavorites) => {
     try {
+      addLog('info', `Saving ${newFavorites.length} favorites...`);
       await storage.set('wine-favorites', JSON.stringify(newFavorites));
       setFavorites(newFavorites);
+      addLog('success', 'Favorites saved successfully');
     } catch (err) {
+      addLog('error', `Failed to save favorites: ${err.message}`);
       console.error('Failed to save favorites:', err);
     }
   };
@@ -40,45 +73,99 @@ function App() {
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
+    setShowConsole(true);
+    clearLogs();
+    addLog('info', 'Starting product fetch...');
     
     try {
+      addLog('info', 'Checking Firebase for cached products...');
       const result = await storage.get('vinmonopolet-products');
       
       if (result?.value) {
+        addLog('success', 'Found cached products in Firebase');
         const data = JSON.parse(result.value);
         setProducts(data);
+        addLog('success', `Loaded ${data.length} products from cache`);
         setLoading(false);
         return;
       }
 
+      addLog('info', 'No cache found, fetching from Vinmonopolet API...');
       let allProducts = [];
       let start = 0;
       const batchSize = 1000;
+      let batchNumber = 1;
       
       while (true) {
+        setProgress({ 
+          current: start, 
+          total: '?', 
+          status: `Fetching batch ${batchNumber}...` 
+        });
+        addLog('info', `Fetching batch ${batchNumber} (products ${start}-${start + batchSize})...`);
+        
         const response = await fetch(`/.netlify/functions/vinmonopolet?start=${start}&maxResults=${batchSize}`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.statusText}`);
+          throw new Error(`API request failed: ${response.statusText}`);
         }
         
         const batch = await response.json();
         
-        if (!batch || batch.length === 0) break;
+        if (!batch || batch.length === 0) {
+          addLog('info', 'No more products to fetch');
+          break;
+        }
         
         allProducts = [...allProducts, ...batch];
+        addLog('success', `Batch ${batchNumber} complete: ${batch.length} products (Total: ${allProducts.length})`);
         
-        if (batch.length < batchSize) break;
+        if (batch.length < batchSize) {
+          addLog('info', 'Received partial batch, reached end of dataset');
+          break;
+        }
         
         start += batchSize;
+        batchNumber++;
+        
+        setProgress({ 
+          current: allProducts.length, 
+          total: '~65000', 
+          status: `Downloaded ${allProducts.length} products...` 
+        });
+        
+        addLog('info', 'Waiting 1 second before next batch...');
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      await storage.set('vinmonopolet-products', JSON.stringify(allProducts));
+      addLog('success', `Download complete! Total: ${allProducts.length} products`);
+      setProgress({ 
+        current: allProducts.length, 
+        total: allProducts.length, 
+        status: 'Saving to Firebase...' 
+      });
+      
+      addLog('info', 'Saving products to Firebase...');
+      const jsonData = JSON.stringify(allProducts);
+      const sizeMB = (jsonData.length / 1024 / 1024).toFixed(2);
+      addLog('info', `Data size: ${sizeMB} MB`);
+      
+      await storage.set('vinmonopolet-products', jsonData, (logEvent) => {
+        addLog(logEvent.type, logEvent.message);
+      });
+      
       setProducts(allProducts);
+      addLog('success', `All ${allProducts.length} products saved and loaded!`);
+      setProgress({ 
+        current: allProducts.length, 
+        total: allProducts.length, 
+        status: 'Complete!' 
+      });
       
     } catch (err) {
       setError(err.message);
+      addLog('error', `Fatal error: ${err.message}`);
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -172,18 +259,62 @@ function App() {
           >
             {loading ? 'Loading...' : 'Refresh Data'}
           </button>
+
+          <button 
+            className="console-toggle"
+            onClick={() => setShowConsole(!showConsole)}
+          >
+            {showConsole ? 'Hide Console' : 'Show Console'}
+          </button>
         </div>
       </header>
+
+      {loading && progress.status && (
+        <div className="progress-bar">
+          <div className="progress-info">
+            <span>{progress.status}</span>
+            {progress.total !== 0 && (
+              <span>{progress.current} / {progress.total}</span>
+            )}
+          </div>
+          <div className="progress-track">
+            <div 
+              className="progress-fill" 
+              style={{ 
+                width: progress.total && progress.total !== '?' 
+                  ? `${(progress.current / progress.total) * 100}%` 
+                  : '50%' 
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {showConsole && (
+        <div className="console">
+          <div className="console-header">
+            <span>Console Log</span>
+            <div className="console-actions">
+              <button onClick={copyLogs} className="console-btn">Copy All</button>
+              <button onClick={clearLogs} className="console-btn">Clear</button>
+            </div>
+          </div>
+          <div className="console-body">
+            {logs.map((log, index) => (
+              <div key={index} className={`log-entry log-${log.type}`}>
+                <span className="log-timestamp">[{log.timestamp}]</span>
+                <span className="log-type">[{log.type.toUpperCase()}]</span>
+                <span className="log-message">{log.message}</span>
+              </div>
+            ))}
+            <div ref={logEndRef} />
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="error">
           Error: {error}
-        </div>
-      )}
-
-      {loading && (
-        <div className="loading">
-          Loading products...
         </div>
       )}
 
