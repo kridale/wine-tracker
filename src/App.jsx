@@ -179,3 +179,4 @@ export const storage = {
 };
 
 export { db };
+export default App;
