@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import './App.css';
 import { storage } from './firebase';
 
@@ -16,10 +16,10 @@ function App() {
   const logEndRef = useRef(null);
   const itemsPerPage = 50;
 
-  const addLog = (type, message) => {
+  const addLog = useCallback((type, message) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [...prev, { type, message, timestamp }]);
-  };
+  }, []);
 
   const copyLogs = () => {
     const logText = logs.map(log => `[${log.timestamp}] [${log.type.toUpperCase()}] ${log.message}`).join('\n');
@@ -38,11 +38,7 @@ function App() {
     }
   }, [logs, showConsole]);
 
-  useEffect(() => {
-    loadFavorites();
-  }, []);
-
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     try {
       addLog('info', 'Loading favorites from Firebase...');
       const result = await storage.get('wine-favorites');
@@ -56,7 +52,11 @@ function App() {
     } catch (err) {
       addLog('error', `Failed to load favorites: ${err.message}`);
     }
-  };
+  }, [addLog]);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
 
   const saveFavorites = async (newFavorites) => {
     try {
