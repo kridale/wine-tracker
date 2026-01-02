@@ -78,9 +78,13 @@
   <script type="module">
     import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18';
     import ReactDOM from 'https://esm.sh/react-dom@18/client';
-    import { RefreshCw, Search, Star, Database, TrendingUp, Filter, X } from 'https://esm.sh/lucide-react@0.263.1';
+    import { RefreshCw, Search, Star, Database, Filter } from 'https://esm.sh/lucide-react@0.263.1';
+
+    console.log('Script loaded');
 
     const VinmonopoletDB = () => {
+      console.log('Component rendering');
+      
       const [wines, setWines] = useState([]);
       const [favorites, setFavorites] = useState([]);
       const [loading, setLoading] = useState(false);
@@ -103,18 +107,44 @@
 
       // Load data on mount
       useEffect(() => {
+        console.log('useEffect: Loading data');
         loadLocalData();
       }, []);
 
       const loadLocalData = async () => {
+        console.log('Loading local data...');
         try {
+          // Check if window.storage exists
+          if (!window.storage) {
+            console.log('window.storage not available, using localStorage fallback');
+            const winesData = localStorage.getItem('vinm-wines-db');
+            const favsData = localStorage.getItem('vinm-favorites');
+            const updateData = localStorage.getItem('vinm-last-update');
+            
+            if (winesData) {
+              const winesList = JSON.parse(winesData);
+              console.log(`Loaded ${winesList.length} wines from localStorage`);
+              setWines(winesList);
+            }
+            if (favsData) {
+              setFavorites(JSON.parse(favsData));
+            }
+            if (updateData) {
+              setLastUpdate(updateData);
+            }
+            return;
+          }
+
           const winesData = await window.storage.get('vinm-wines-db');
           const favsData = await window.storage.get('vinm-favorites');
           const updateData = await window.storage.get('vinm-last-update');
           
           if (winesData?.value) {
             const winesList = JSON.parse(winesData.value);
+            console.log(`Loaded ${winesList.length} wines`);
             setWines(winesList);
+          } else {
+            console.log('No wines data found');
           }
           if (favsData?.value) {
             setFavorites(JSON.parse(favsData.value));
@@ -123,7 +153,7 @@
             setLastUpdate(updateData.value);
           }
         } catch (error) {
-          console.log('No existing data');
+          console.error('Error loading data:', error);
         }
       };
 
@@ -136,6 +166,7 @@
           let hasMore = true;
           
           while (hasMore) {
+            console.log(`Fetching batch starting at ${start}...`);
             const response = await fetch(`/.netlify/functions/fetch-vinmonopolet?maxResults=${batchSize}&start=${start}`);
             const data = await response.json();
             
@@ -148,6 +179,7 @@
               allProducts = allProducts.concat(data.products);
               hasMore = data.hasMore;
               start += batchSize;
+              console.log(`Fetched ${allProducts.length} total wines`);
             } else {
               hasMore = false;
             }
@@ -159,18 +191,38 @@
           }
           
           if (allProducts.length > 0) {
+            console.log(`Saving ${allProducts.length} wines`);
             setWines(allProducts);
-            await window.storage.set('vinm-wines-db', JSON.stringify(allProducts));
+            
+            // Try window.storage first, fallback to localStorage
+            try {
+              if (window.storage) {
+                await window.storage.set('vinm-wines-db', JSON.stringify(allProducts));
+              } else {
+                localStorage.setItem('vinm-wines-db', JSON.stringify(allProducts));
+              }
+            } catch (e) {
+              console.error('Storage error:', e);
+            }
             
             const now = new Date().toISOString();
             setLastUpdate(now);
-            await window.storage.set('vinm-last-update', now);
+            
+            try {
+              if (window.storage) {
+                await window.storage.set('vinm-last-update', now);
+              } else {
+                localStorage.setItem('vinm-last-update', now);
+              }
+            } catch (e) {
+              console.error('Storage error:', e);
+            }
             
             alert(`✓ Loaded ${allProducts.length.toLocaleString()} wines`);
           }
         } catch (error) {
           alert('Failed to fetch. Check console.');
-          console.error(error);
+          console.error('Fetch error:', error);
         } finally {
           setLoading(false);
         }
@@ -239,7 +291,16 @@
           : [...favorites, wineId];
         
         setFavorites(newFavorites);
-        await window.storage.set('vinm-favorites', JSON.stringify(newFavorites));
+        
+        try {
+          if (window.storage) {
+            await window.storage.set('vinm-favorites', JSON.stringify(newFavorites));
+          } else {
+            localStorage.setItem('vinm-favorites', JSON.stringify(newFavorites));
+          }
+        } catch (e) {
+          console.error('Storage error:', e);
+        }
       };
 
       // Get unique values for filters
@@ -261,6 +322,8 @@
           ? (wines.reduce((sum, w) => sum + (w.price || 0), 0) / wines.length).toFixed(0)
           : 0
       }), [wines, favorites]);
+
+      console.log(`Rendering with ${wines.length} wines, ${filteredWines.length} filtered`);
 
       return (
         <div className="min-h-screen">
@@ -432,8 +495,8 @@
               <>
                 {/* Wine Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  {paginatedWines.map(wine => {
-                    const wineId = wine.productId || wine.id;
+                  {paginatedWines.map((wine, idx) => {
+                    const wineId = wine.productId || wine.id || `wine-${idx}`;
                     const isFavorite = favorites.includes(wineId);
                     const inStock = (wine.stock || wine.productAvailability) === 'Tilgjengelig';
 
@@ -532,8 +595,8 @@
             ) : (
               // Favorites Tab
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {wines.filter(w => favorites.includes(w.productId || w.id)).map(wine => {
-                  const wineId = wine.productId || wine.id;
+                {wines.filter(w => favorites.includes(w.productId || w.id)).map((wine, idx) => {
+                  const wineId = wine.productId || wine.id || `fav-${idx}`;
                   const inStock = (wine.stock || wine.productAvailability) === 'Tilgjengelig';
 
                   return (
@@ -592,7 +655,20 @@
       );
     };
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<VinmonopoletDB />);
+    try {
+      console.log('Creating React root...');
+      ReactDOM.createRoot(document.getElementById('root')).render(<VinmonopoletDB />);
+      console.log('React app rendered');
+    } catch (error) {
+      console.error('React rendering error:', error);
+      document.getElementById('root').innerHTML = `
+        <div style="color: white; padding: 20px;">
+          <h1>Error loading app</h1>
+          <p>${error.message}</p>
+          <p>Check browser console for details</p>
+        </div>
+      `;
+    }
   </script>
 
 </body>
